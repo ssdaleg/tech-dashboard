@@ -220,6 +220,7 @@ const DAILY_TARGET_HRS = 6.5;   // Billable hours per day target
 const TARGET_HRS_MTD = WORK_DAYS_SO_FAR * DAILY_TARGET_HRS; // 91h
 
 // ── TECHNICIANS ───────────────────────────────────────────────────────────────
+const API_URL = 'https://tech-dashboard-api.azurewebsites.net/api/dashboard-data';
 const TECHS = ['Aristo','Ashley','Bryon','Chris','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
 
 // Initials: first 2 letters of first name (Ar, As, Br, Ch, Da, Ja, Mo, Na, Ra, Ri, Ri→Rh)
@@ -507,9 +508,38 @@ let autoIdx=0;
 setInterval(()=>{autoIdx=(autoIdx+1)%VKEYS.length; switchView(VKEYS[autoIdx]);},12000);
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-buildLeaderboards();
-buildTechCards();
-renderPraise();
+async function loadLiveData() {
+  try {
+    const res  = await fetch(API_URL);
+    if (!res.ok) throw new Error(`API returned ${res.status}`);
+    const json = await res.json();
+
+    TECHS.forEach(tech => {
+      if (json.techs[tech]) {
+        Object.assign(RAW[tech], json.techs[tech]);
+      }
+    });
+
+    WORK_DAYS_MONTH  = json.workDaysMonth;
+    WORK_DAYS_SO_FAR = json.workDaysDone;
+
+    const targetHrs = json.workDaysDone * json.dailyTarget;
+    document.getElementById('mtd-label').textContent =
+      `MTD — Day ${json.workDaysDone} of ${json.workDaysMonth}  ·  Target ${targetHrs}h/tech`;
+
+    document.querySelector('.badge-blue').textContent = json.month;
+
+  } catch (err) {
+    console.warn('Live data load failed, using hardcoded data:', err.message);
+  }
+
+  buildLeaderboards();
+  buildTechCards();
+  renderPraise();
+}
+
+loadLiveData();
+setInterval(loadLiveData, 15 * 60 * 1000);
 </script>
 </body>
 </html>
