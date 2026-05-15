@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tech Performance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#F5A623;--silver:#9EA8B3;--bronze:#C47B3A;
+  --green:#00C853;--red:#E53935;--amber:#F59E0B;
+  --bg:#0A0E17;--surface:#111827;--card:#161E2E;
+  --border:rgba(255,255,255,0.07);--text:#F0F4FF;--muted:#6B7A99;--accent:#2563EB;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;overflow:hidden}
+#app{width:100vw;height:100vh;display:grid;grid-template-rows:52px 1fr 196px}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border)}
+.logo{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;letter-spacing:2px;text-transform:uppercase;color:var(--gold)}
+.logo span{color:var(--text);opacity:0.5;font-weight:400;margin-left:8px;font-size:13px;letter-spacing:0;text-transform:none}
+.header-right{display:flex;align-items:center;gap:16px}
+.badge{font-weight:600;font-size:11px;padding:4px 12px;border-radius:20px;letter-spacing:0.5px}
+.badge-blue{background:var(--accent);color:#fff}
+.badge-green{background:rgba(0,200,83,0.15);color:var(--green);border:1px solid rgba(0,200,83,0.3)}
+#live-time{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:600;color:var(--muted);letter-spacing:1px}
+.tab-nav{display:flex;gap:2px}
+.tab-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-family:'Barlow',sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:6px;transition:all 0.2s}
+.tab-btn:hover{background:rgba(255,255,255,0.06);color:var(--text)}
+.tab-btn.active{background:var(--accent);color:#fff}
+
+/* Main body */
+#main-body{display:grid;grid-template-columns:262px 1fr 208px;overflow:hidden}
+
+/* Left panel */
+#left-panel{background:var(--surface);border-right:1px solid var(--border);padding:12px 10px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.panel-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.leaderboard{display:flex;flex-direction:column;gap:3px}
+.lb-row{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:8px;background:var(--card);border:1px solid var(--border)}
+.lb-row.rank-1{border-color:rgba(245,166,35,0.45);background:rgba(245,166,35,0.07)}
+.lb-row.rank-2{border-color:rgba(158,168,179,0.3)}
+.lb-row.rank-3{border-color:rgba(196,123,58,0.3)}
+.lb-rank{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.rank-1 .lb-rank{color:var(--gold)}.rank-2 .lb-rank{color:var(--silver)}.rank-3 .lb-rank{color:var(--bronze)}
+.lb-row:not(.rank-1):not(.rank-2):not(.rank-3) .lb-rank{color:var(--muted)}
+.lb-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:10px;flex-shrink:0}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-bar-track{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:3px}
+.lb-bar-fill{height:3px;border-radius:2px}
+.lb-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;text-align:right;flex-shrink:0}
+
+/* Centre */
+#centre-panel{display:flex;flex-direction:column;overflow:hidden}
+.chart-view{width:100%;height:100%;padding:12px 16px;display:none;flex-direction:column;gap:8px}
+.chart-view.active{display:flex}
+.chart-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:0.5px}
+.chart-title span{font-weight:400;color:var(--muted);font-size:13px;margin-left:8px}
+.chart-wrap{flex:1;position:relative;min-height:0}
+
+/* Right panel */
+#right-panel{background:var(--surface);border-left:1px solid var(--border);padding:12px 10px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.praise-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px;flex-shrink:0}
+.praise-card.featured{border-color:rgba(245,166,35,0.35);background:rgba(245,166,35,0.05)}
+.praise-stars{color:var(--gold);font-size:11px;letter-spacing:1px;margin-bottom:3px}
+.praise-text{font-size:11px;line-height:1.5;color:var(--text);opacity:0.85;font-style:italic}
+.praise-from{font-size:10px;color:var(--muted);margin-top:4px}
+.praise-tech-tag{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:4px;letter-spacing:0.5px;text-transform:uppercase}
+.add-praise-btn{margin-top:auto;background:rgba(37,99,235,0.15);border:1px solid rgba(37,99,235,0.4);color:#60A5FA;font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;padding:8px;border-radius:8px;cursor:pointer;text-align:center;transition:all 0.2s}
+.add-praise-btn:hover{background:rgba(37,99,235,0.3)}
+
+/* Bottom tech cards */
+#bottom-bar{border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:stretch;overflow:hidden}
+.tech-card{flex:1;display:flex;flex-direction:column;padding:8px 7px 7px;border-right:1px solid var(--border);position:relative;overflow:hidden}
+.tech-card:last-child{border-right:none}
+.tc-crown{position:absolute;top:5px;right:5px;font-size:11px;line-height:1}
+.tc-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:11px;margin-bottom:4px}
+.tc-jobs-row{display:flex;align-items:baseline;gap:3px;margin-bottom:4px}
+.tc-jobs-num{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;line-height:1}
+.tc-jobs-lbl{font-size:9px;color:var(--muted)}
+.tc-target-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.tc-target-lbl{font-size:9px;color:var(--muted)}
+.tc-target-pct{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700}
+.tc-bar-track{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;margin-bottom:4px;position:relative}
+.tc-bar-fill{height:5px;border-radius:3px;position:absolute;top:0;left:0}
+.tc-rev{font-size:10px;color:var(--muted)}
+.tc-rev strong{color:var(--text);font-weight:600}
+
+/* Modal */
+#praise-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center}
+#praise-modal.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:420px}
+.modal-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;margin-bottom:16px}
+.modal-box label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;margin-top:12px;text-transform:uppercase;letter-spacing:0.5px}
+.modal-box input,.modal-box select,.modal-box textarea{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Barlow',sans-serif;font-size:13px;padding:8px 12px}
+.modal-box textarea{height:80px;resize:none}
+.star-select{display:flex;gap:6px;margin:6px 0}
+.star-btn{background:none;border:none;font-size:22px;cursor:pointer;opacity:0.25;transition:opacity 0.15s}
+.star-btn.active{opacity:1}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.btn-primary{flex:1;background:var(--accent);border:none;color:#fff;font-family:'Barlow',sans-serif;font-weight:600;font-size:13px;padding:10px;border-radius:8px;cursor:pointer}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Barlow',sans-serif;font-size:13px;padding:10px 16px;border-radius:8px;cursor:pointer}
+
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,0)}50%{box-shadow:0 0 14px 3px rgba(245,166,35,0.2)}}
+.rank-1{animation:pulse-gold 3s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">TechOps <span>Performance Centre</span></div>
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchView('jobs')">Jobs MTD</button>
+      <button class="tab-btn" onclick="switchView('billable')">Billable Target</button>
+      <button class="tab-btn" onclick="switchView('revenue')">Revenue MTD</button>
+      <button class="tab-btn" onclick="switchView('radar')">All Metrics</button>
+    </div>
+    <div class="header-right">
+      <span class="badge badge-green" id="mtd-label"></span>
+      <span class="badge badge-blue">Apr 2026</span>
+      <span id="live-time"></span>
+    </div>
+  </header>
+
+  <div id="main-body">
+
+    <div id="left-panel">
+      <div>
+        <div class="panel-title">🏆 Jobs Completed — MTD</div>
+        <div class="leaderboard" id="lb-jobs"></div>
+      </div>
+      <div>
+        <div class="panel-title">⏱ Billable Target %</div>
+        <div class="leaderboard" id="lb-billable"></div>
+      </div>
+      <div>
+        <div class="panel-title">💰 Revenue — MTD</div>
+        <div class="leaderboard" id="lb-rev"></div>
+      </div>
+    </div>
+
+    <div id="centre-panel">
+
+      <div class="chart-view active" id="view-jobs">
+        <div class="chart-title">Jobs Completed <span>Month to date · Apr 2026</span></div>
+        <div class="chart-wrap">
+          <canvas id="chartJobs" role="img" aria-label="Horizontal bar chart of jobs completed MTD per technician, sorted by count">Jobs completed MTD sorted descending by technician.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-view" id="view-billable">
+        <div class="chart-title">Billable Hours vs Target <span>6.5 hrs/day · MTD progress</span></div>
+        <div class="chart-wrap">
+          <canvas id="chartBillable" role="img" aria-label="Bar chart of each technician's billable hours as a percentage of the 6.5 hour daily target MTD">Billable target attainment per technician for Apr 2026.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-view" id="view-revenue">
+        <div class="chart-title">Revenue Generated <span>Month to date · Apr 2026</span></div>
+        <div class="chart-wrap">
+          <canvas id="chartRev" role="img" aria-label="Bar chart of revenue generated by each technician month to date in Apr 2026">Revenue MTD per technician.</canvas>
+        </div>
+      </div>
+
+      <div class="chart-view" id="view-radar">
+        <div class="chart-title">All-Round Performance <span>Normalised scores · Apr 2026</span></div>
+        <div class="chart-wrap">
+          <canvas id="chartRadar" role="img" aria-label="Radar chart comparing top 5 technicians across all key metrics">Radar comparison for top 5 technicians Apr 2026.</canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="right-panel">
+      <div class="panel-title">⭐ Customer Praise</div>
+      <div id="praise-feed" style="display:flex;flex-direction:column;gap:7px;overflow:hidden;flex:1"></div>
+      <button class="add-praise-btn" onclick="openModal()">+ Add Customer Feedback</button>
+    </div>
+
+  </div>
+
+  <div id="bottom-bar" role="list" aria-label="Technician performance cards"></div>
+
+</div>
+
+<div id="praise-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-heading">Add Customer Feedback</div>
+    <label>Technician</label>
+    <select id="m-tech"></select>
+    <label>Customer Name</label>
+    <input id="m-customer" type="text" placeholder="e.g. Acme Corp · John Smith">
+    <label>Rating</label>
+    <div class="star-select">
+      <button class="star-btn active" onclick="setStars(1)">★</button>
+      <button class="star-btn active" onclick="setStars(2)">★</button>
+      <button class="star-btn active" onclick="setStars(3)">★</button>
+      <button class="star-btn active" onclick="setStars(4)">★</button>
+      <button class="star-btn active" onclick="setStars(5)">★</button>
+    </div>
+    <label>Feedback</label>
+    <textarea id="m-text" placeholder="What did the customer say?"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitPraise()">Save Feedback</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIG — update these two values each working day ─────────────────────────
+const WORK_DAYS_MONTH  = 20;    // Total working days in Apr 2026
+const WORK_DAYS_SO_FAR = 14;    // Working days elapsed so far (update daily)
+const DAILY_TARGET_HRS = 6.5;   // Billable hours per day target
+
+const TARGET_HRS_MTD = WORK_DAYS_SO_FAR * DAILY_TARGET_HRS; // 91h
+
+// ── TECHNICIANS ───────────────────────────────────────────────────────────────
+const TECHS = ['Aristo','Ashley','Bryon','Chris','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
+
+// Initials: first 2 letters of first name (Ar, As, Br, Ch, Da, Ja, Mo, Na, Ra, Ri, Ri→Rh)
+const INITIALS = { Aristo:'AR', Ashley:'AS', Bryon:'BR', Chris:'CH', David:'DA',
+                   Jarryd:'JA', Mondre:'MO', Naeem:'NA', Raees:'RA', Richard:'RI', Riedhor:'RH' };
+
+const AVATAR_COLORS = [
+  '#4F46E5','#0891B2','#059669','#D97706','#DC2626',
+  '#7C3AED','#DB2777','#2563EB','#16A34A','#9333EA','#0F766E'
+];
+const COLOR = t => AVATAR_COLORS[TECHS.indexOf(t)];
+
+// ── APR 2026 MTD DATA ─────────────────────────────────────────────────────────
+// Source: Combined sheet rows 49-59. Update daily as EWorks data comes in.
+const RAW = {
+  Aristo:  { appt:5.00,   inv:2.00,  jobs:5,   cost:1035,    travel:0.30  },
+  Ashley:  { appt:93.26,  inv:73.15, jobs:79,  cost:32767.5, travel:97.45 },
+  Bryon:   { appt:4.15,   inv:5.50,  jobs:8,   cost:2930,    travel:0     },
+  Chris:   { appt:1.45,   inv:2.50,  jobs:3,   cost:322.5,   travel:1.00  },
+  David:   { appt:92.37,  inv:61.00, jobs:68,  cost:29600,   travel:368.18},
+  Jarryd:  { appt:61.57,  inv:35.00, jobs:50,  cost:12357,   travel:33.00 },
+  Mondre:  { appt:82.45,  inv:64.00, jobs:152, cost:28617,   travel:2.00  },
+  Naeem:   { appt:105.43, inv:93.30, jobs:64,  cost:39482.5, travel:36.20 },
+  Raees:   { appt:100.25, inv:59.50, jobs:115, cost:21990,   travel:1.10  },
+  Richard: { appt:0,      inv:1.00,  jobs:0,   cost:0,       travel:0     },
+  Riedhor: { appt:103.55, inv:90.25, jobs:130, cost:40860.3, travel:20.25 },
+};
+// Derive billable %: appt hrs ÷ MTD target (days elapsed × 6.5h)
+TECHS.forEach(t => { RAW[t].billPct = TARGET_HRS_MTD > 0 ? Math.round(RAW[t].appt / TARGET_HRS_MTD * 100) : 0; });
+
+// ── PRAISE DATA ───────────────────────────────────────────────────────────────
+let PRAISE = [
+  { tech:'Naeem',   customer:'Blue Label Telecoms', stars:5, text:'Naeem resolved our server issue in record time. Absolutely professional and kept us updated throughout.', date:'14 Apr' },
+  { tech:'Riedhor', customer:'Grapevine Trading',   stars:5, text:'Riedhor went above and beyond to get our systems back online over the weekend. Exceptional dedication.',  date:'11 Apr' },
+  { tech:'Ashley',  customer:'Cape Timber Co.',     stars:5, text:'Extremely efficient. Ashley had our network sorted within the hour and explained everything clearly.',    date:'9 Apr'  },
+  { tech:'Raees',   customer:'ACSA Logistics',      stars:4, text:'Great service. Raees was on-site quickly and fixed the issue on first visit. Very impressed.',            date:'7 Apr'  },
+  { tech:'Mondre',  customer:'Konica Minolta SA',   stars:5, text:"Mondre's attitude and knowledge is always top-class. Our team looks forward to his visits.",             date:'3 Apr'  },
+];
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+const fmtR  = v => 'R\u202F' + Math.round(v).toLocaleString('en-ZA');
+const sorted = key => [...TECHS].sort((a,b) => RAW[b][key] - RAW[a][key]);
+const maxVal = key => Math.max(...TECHS.map(t => RAW[t][key])) || 1;
+
+// ── LEADERBOARDS ──────────────────────────────────────────────────────────────
+function buildLB(id, key, fmt) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  const mx = maxVal(key);
+  sorted(key).slice(0,5).forEach((tech, idx) => {
+    const r   = idx + 1;
+    const val = RAW[tech][key];
+    const pct = Math.round(val / mx * 100);
+    const rankCls  = r <= 3 ? `rank-${r}` : '';
+    const rankIcon = r === 1 ? '①' : r === 2 ? '②' : r === 3 ? '③' : r;
+    const valColor = r===1?'var(--gold)':r===2?'var(--silver)':r===3?'var(--bronze)':'var(--text)';
+    el.insertAdjacentHTML('beforeend', `
+      <div class="lb-row ${rankCls}">
+        <span class="lb-rank">${rankIcon}</span>
+        <div class="lb-avatar" style="background:${COLOR(tech)}22;color:${COLOR(tech)}">${INITIALS[tech]}</div>
+        <div class="lb-info">
+          <div class="lb-name">${tech}</div>
+          <div class="lb-bar-track"><div class="lb-bar-fill" style="width:${pct}%;background:${COLOR(tech)}"></div></div>
+        </div>
+        <div class="lb-val" style="color:${valColor}">${fmt(val)}</div>
+      </div>`);
+  });
+}
+
+function buildLeaderboards() {
+  buildLB('lb-jobs',     'jobs',    v => v);
+  buildLB('lb-billable', 'billPct', v => v + '%');
+  buildLB('lb-rev',      'cost',    fmtR);
+}
+
+// ── TECH CARDS ────────────────────────────────────────────────────────────────
+function buildTechCards() {
+  const bar = document.getElementById('bottom-bar');
+  bar.innerHTML = '';
+  const jobTop  = sorted('jobs')[0];
+  const billTop = sorted('billPct')[0];
+  const revTop  = sorted('cost')[0];
+
+  TECHS.forEach(tech => {
+    const d = RAW[tech];
+    const c = COLOR(tech);
+    const pct = d.billPct;
+    const barColor = pct >= 100 ? 'var(--green)' : pct >= 80 ? 'var(--gold)' : pct >= 60 ? 'var(--amber)' : 'var(--red)';
+    const barW  = Math.min(pct, 100);
+    const crowns = [jobTop===tech?'🏆':'', billTop===tech?'⏱':'', revTop===tech?'💰':''].filter(Boolean).join('');
+    bar.insertAdjacentHTML('beforeend', `
+      <div class="tech-card" role="listitem" aria-label="${tech}">
+        ${crowns ? `<div class="tc-crown">${crowns}</div>` : ''}
+        <div class="tc-avatar" style="background:${c}22;color:${c}">${INITIALS[tech]}</div>
+        <div class="tc-jobs-row">
+          <span class="tc-jobs-num" style="color:${c}">${d.jobs}</span>
+          <span class="tc-jobs-lbl">&nbsp;jobs</span>
+        </div>
+        <div class="tc-target-row">
+          <span class="tc-target-lbl">vs 6.5h/day target</span>
+          <span class="tc-target-pct" style="color:${barColor}">${pct}%</span>
+        </div>
+        <div class="tc-bar-track">
+          <div class="tc-bar-fill" style="width:${barW}%;background:${barColor}"></div>
+        </div>
+        <div class="tc-rev"><strong>${fmtR(d.cost)}</strong> MTD</div>
+      </div>`);
+  });
+}
+
+// ── CHART SHARED SETTINGS ─────────────────────────────────────────────────────
+const TIP  = { backgroundColor:'#1E2A3B',titleColor:'#F0F4FF',bodyColor:'#9EA8B3',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:10 };
+const TX   = { color:'#6B7A99', font:{family:'Barlow Condensed',size:12,weight:'700'}, autoSkip:false, maxRotation:0 };
+const TY   = { color:'#6B7A99', font:{family:'Barlow',size:11} };
+const GRD  = { color:'rgba(255,255,255,0.04)' };
+const BASE = { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:TIP} };
+
+// 1. Jobs MTD — horizontal, sorted
+const JS = sorted('jobs');
+new Chart(document.getElementById('chartJobs'), {
+  type:'bar',
+  data:{
+    labels: JS,
+    datasets:[{ label:'Jobs MTD', data:JS.map(t=>RAW[t].jobs),
+      backgroundColor: JS.map(t=>COLOR(t)), borderRadius:5, borderSkipped:false }]
+  },
+  options:{ ...BASE, indexAxis:'y',
+    scales:{
+      x:{ ticks:{...TY, callback:v=>v}, grid:GRD, title:{display:true,text:'Jobs completed',color:'#6B7A99',font:{size:11}} },
+      y:{ ticks:{color:'#6B7A99',font:{family:'Barlow Condensed',size:13,weight:'700'}}, grid:GRD }
+    },
+    plugins:{ ...BASE.plugins, tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw} jobs`}} }
+  }
+});
+
+// 2. Billable % vs target — with target line plugin
+new Chart(document.getElementById('chartBillable'), {
+  type:'bar',
+  data:{
+    labels: TECHS,
+    datasets:[{ label:'Billable %', data:TECHS.map(t=>RAW[t].billPct),
+      backgroundColor: TECHS.map(t => {
+        const p = RAW[t].billPct;
+        return p>=100?'#00C853':p>=80?'#F5A623':p>=60?'#F59E0B':'#E53935';
+      }), borderRadius:5, borderSkipped:false }]
+  },
+  options:{ ...BASE,
+    scales:{
+      x:{ ticks:TX, grid:GRD },
+      y:{ ticks:{...TY,callback:v=>v+'%'}, grid:GRD, max:130,
+          title:{display:true,text:'% of 6.5h/day target',color:'#6B7A99',font:{size:11}} }
+    },
+    plugins:{ ...BASE.plugins, tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw}% — target ${TARGET_HRS_MTD}h MTD`}} }
+  },
+  plugins:[{
+    id:'targetLine',
+    afterDraw(chart){
+      const {ctx,chartArea:{left,right},scales:{y}} = chart;
+      const yPx = y.getPixelForValue(100);
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,0.4)';
+      ctx.lineWidth=1.5;
+      ctx.setLineDash([6,4]);
+      ctx.beginPath(); ctx.moveTo(left,yPx); ctx.lineTo(right,yPx); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(255,255,255,0.55)';
+      ctx.font='600 11px Barlow, sans-serif';
+      ctx.fillText('TARGET 100%', right-82, yPx-5);
+      ctx.restore();
+    }
+  }]
+});
+
+// 3. Revenue MTD
+new Chart(document.getElementById('chartRev'), {
+  type:'bar',
+  data:{
+    labels: TECHS,
+    datasets:[{ label:'Revenue MTD', data:TECHS.map(t=>RAW[t].cost),
+      backgroundColor:AVATAR_COLORS, borderRadius:5, borderSkipped:false }]
+  },
+  options:{ ...BASE,
+    scales:{
+      x:{ ticks:TX, grid:GRD },
+      y:{ ticks:{...TY,callback:v=>'R'+Math.round(v/1000)+'k'}, grid:GRD,
+          title:{display:true,text:'Revenue (R)',color:'#6B7A99',font:{size:11}} }
+    },
+    plugins:{ ...BASE.plugins, tooltip:{...TIP,callbacks:{label:ctx=>' '+fmtR(ctx.raw)}} }
+  }
+});
+
+// 4. Radar — top 5 by composite score
+const top5 = sorted('jobs').slice(0,5).sort((a,b)=>
+  (RAW[b].appt+RAW[b].jobs*0.5+RAW[b].cost/1000)-(RAW[a].appt+RAW[a].jobs*0.5+RAW[a].cost/1000)
+);
+const mx = { jobs:maxVal('jobs'), appt:maxVal('appt'), cost:maxVal('cost'), inv:maxVal('inv'), billPct:maxVal('billPct') };
+const RC  = ['#4F46E5','#0891B2','#059669','#D97706','#DB2777'];
+new Chart(document.getElementById('chartRadar'), {
+  type:'radar',
+  data:{
+    labels:['Jobs','Appt Hrs','Revenue','Inv Hrs','Billable %'],
+    datasets: top5.map((tech,i)=>({
+      label:tech,
+      data:[RAW[tech].jobs/mx.jobs*100, RAW[tech].appt/mx.appt*100,
+            RAW[tech].cost/mx.cost*100, RAW[tech].inv/mx.inv*100,
+            RAW[tech].billPct/mx.billPct*100],
+      borderColor:RC[i], backgroundColor:RC[i]+'22',
+      pointBackgroundColor:RC[i], borderWidth:2, pointRadius:4,
+    }))
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:true,position:'right',labels:{color:'#9EA8B3',font:{family:'Barlow',size:11},boxWidth:10,padding:10}},
+      tooltip:TIP
+    },
+    scales:{r:{min:0,max:100,ticks:{display:false},grid:{color:'rgba(255,255,255,0.08)'},
+      pointLabels:{color:'#9EA8B3',font:{family:'Barlow Condensed',size:13,weight:'600'}},
+      angleLines:{color:'rgba(255,255,255,0.06)'}}}
+  }
+});
+
+// ── PRAISE ────────────────────────────────────────────────────────────────────
+function renderPraise() {
+  const feed = document.getElementById('praise-feed');
+  feed.innerHTML = '';
+  PRAISE.slice(0,4).forEach((p,i) => {
+    const c = COLOR(p.tech);
+    const stars = '★'.repeat(p.stars)+'☆'.repeat(5-p.stars);
+    feed.insertAdjacentHTML('beforeend',`
+      <div class="praise-card ${i===0?'featured':''}">
+        <div class="praise-stars">${stars}</div>
+        <div class="praise-text">"${p.text}"</div>
+        <div class="praise-from">${p.customer} · ${p.date}</div>
+        <span class="praise-tech-tag" style="background:${c}22;color:${c}">${p.tech}</span>
+      </div>`);
+  });
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+let starVal = 5;
+function openModal() {
+  const sel = document.getElementById('m-tech');
+  if (!sel.options.length) TECHS.forEach(t=>sel.insertAdjacentHTML('beforeend',`<option>${t}</option>`));
+  document.getElementById('praise-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('praise-modal').classList.remove('open'); }
+function setStars(n) {
+  starVal = n;
+  document.querySelectorAll('.star-btn').forEach((b,i)=>b.classList.toggle('active',i<n));
+}
+function submitPraise() {
+  const tech = document.getElementById('m-tech').value;
+  const cust = document.getElementById('m-customer').value.trim()||'Anonymous';
+  const text = document.getElementById('m-text').value.trim();
+  if (!text) return;
+  const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  PRAISE.unshift({tech,customer:cust,stars:starVal,text,date:today});
+  closeModal();
+  renderPraise();
+  document.getElementById('m-customer').value='';
+  document.getElementById('m-text').value='';
+  setStars(5);
+}
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+const VKEYS = ['jobs','billable','revenue','radar'];
+function switchView(key) {
+  document.querySelectorAll('.chart-view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+key).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',VKEYS[i]===key));
+}
+
+// ── CLOCK + MTD BADGE ─────────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('live-time').textContent =
+    new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+document.getElementById('mtd-label').textContent =
+  `MTD — Day ${WORK_DAYS_SO_FAR} of ${WORK_DAYS_MONTH}  ·  Target ${TARGET_HRS_MTD}h/tech`;
+setInterval(updateClock,1000); updateClock();
+
+// Auto-rotate views every 12s
+let autoIdx=0;
+setInterval(()=>{autoIdx=(autoIdx+1)%VKEYS.length; switchView(VKEYS[autoIdx]);},12000);
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+buildLeaderboards();
+buildTechCards();
+renderPraise();
+</script>
+</body>
+</html>
