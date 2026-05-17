@@ -229,7 +229,7 @@ const PRAISE_PEOPLE = [
 const DAILY_TARGET  = 6.5;
 const WORK_DAYS_MAP = {'Feb 2026':20,'Mar 2026':22,'Apr 2026':20,'May 2026':21,'Jun 2026':21};
 
-let MONTHS          = ['Feb 2026','Mar 2026','Apr 2026'];
+let MONTHS          = ['Mar 2026','Apr 2026','May 2026']; // always last 3 — updated by API
 let WORK_DAYS_DONE  = 14;
 let WORK_DAYS_MONTH = 20;
 let REV_TARGET      = 300000;
@@ -237,19 +237,21 @@ let REV_TARGET      = 300000;
 const MONTH_TARGETS = {'Feb 2026':280000,'Mar 2026':280000,'Apr 2026':300000,'May 2026':300000};
 
 // SLA Recurring revenue per month (read from API, fallback hardcoded)
-let SLA_REVENUE = {'Feb 2026':85000,'Mar 2026':85000,'Apr 2026':92000,'May 2026':92000};
-let SLA_PREV    = 85000;  // previous month SLA
-let SLA_CURR    = 92000;  // current month SLA
+let SLA_REVENUE = {'Mar 2026':85000,'Apr 2026':92000,'May 2026':92000};
+let SLA_PREV    = 85000;
+let SLA_CURR    = 92000;
+// Adhoc team totals per month (updated from API adhoc3 array)
+let ADHOC3 = [0, 0, 0];
 
 // ── FALLBACK DATA — 3 months [0]=Feb [1]=Mar [2]=Apr ─────────────────────────
 let TD = {
-  Ashley:  {appt:[57.4,140.2,93.26], jobs:[40,84,79],   cost:[16452,46821,32767],travel:[22.16,43.8,97.45]},
-  David:   {appt:[0,98.1,92.37], jobs:[0,70,68],    cost:[0,31237,29600],travel:[0,92.1,368.18]},
-  Jarryd:  {appt:[24.38,43,61.57],jobs:[45,61,50],  cost:[10700,8836,12357],travel:[45.17,50.35,33]},
-  Mondre:  {appt:[83,94.24,82.45],jobs:[98,160,152], cost:[12860,40830,28617],travel:[2.45,7.4,2]},
-  Naeem:   {appt:[85.32,115.34,105.43],jobs:[66,78,64],cost:[41519,43227,39482],travel:[31.14,44.4,36.2]},
-  Raees:   {appt:[120.5,136.55,100.25],jobs:[127,136,115],cost:[13650,37922,21990],travel:[0,2.19,1.1]},
-  Riedhor: {appt:[99.56,108,103.55],jobs:[84,112,130],cost:[17581,27103,40860],travel:[31.5,23.59,20.25]},
+  Ashley:  {appt:[140.2,93.26,0], jobs:[84,79,0],   cost:[46821,32767,0],travel:[43.8,97.45,0]},
+  David:   {appt:[98.1,92.37,0], jobs:[70,68,0],    cost:[31237,29600,0],travel:[92.1,368.18,0]},
+  Jarryd:  {appt:[43,61.57,0],jobs:[61,50,0],  cost:[8836,12357,0],travel:[50.35,33,0]},
+  Mondre:  {appt:[94.24,82.45,0],jobs:[160,152,0], cost:[40830,28617,0],travel:[7.4,2,0]},
+  Naeem:   {appt:[115.34,105.43,0],jobs:[78,64,0],cost:[43227,39482,0],travel:[44.4,36.2,0]},
+  Raees:   {appt:[136.55,100.25,0],jobs:[136,115,0],cost:[37922,21990,0],travel:[2.19,1.1,0]},
+  Riedhor: {appt:[108,103.55,0],jobs:[112,130,0],cost:[27103,40860,0],travel:[23.59,20.25,0]},
 };
 
 let PRAISE = [
@@ -375,7 +377,10 @@ function buildCharts() {
   });
 
   // ── C4: Team Revenue 3-Month Trend — Stacked (Adhoc + SLA Recurring) ──
-  const adhocByMonth  = MONTHS.map((m,mi) => TECHS.reduce((s,t)=>s+((TD[t].cost||[])[mi]||0),0));
+  // Use API-provided adhoc totals if available, otherwise sum from TD
+  const adhocByMonth  = MONTHS.map((m,mi) =>
+    ADHOC3[mi] > 0 ? ADHOC3[mi] : TECHS.reduce((s,t)=>s+((TD[t].cost||[])[mi]||0),0)
+  );
   const slaByMonth    = MONTHS.map(m => SLA_REVENUE[m] || 0);
   const totalByMonth  = MONTHS.map((m,mi) => adhocByMonth[mi] + slaByMonth[mi]);
   const mTargets      = MONTHS.map(m => MONTH_TARGETS[m] || REV_TARGET);
@@ -607,48 +612,65 @@ async function submitPraise(){
 async function loadData(){
   try{
     const controller = new AbortController();
-    const timeout    = setTimeout(()=>controller.abort(), 10000); // 10s timeout
+    const timeout    = setTimeout(()=>controller.abort(), 10000);
     const res        = await fetch(API_URL, {signal: controller.signal});
     clearTimeout(timeout);
-
     if(!res.ok) throw new Error('API '+res.status);
     const json = await res.json();
     if(json.error) throw new Error(json.error);
 
-    if(json.month)    MONTHS[2]=json.month;
-    if(json.prevMonth)MONTHS[1]=json.prevMonth;
+    // ── Update config ──
     WORK_DAYS_DONE  = json.workDaysDone  || WORK_DAYS_DONE;
     WORK_DAYS_MONTH = json.workDaysMonth || WORK_DAYS_MONTH;
     REV_TARGET      = json.revenueTarget || REV_TARGET;
-    if(json.monthTargets)  Object.assign(MONTH_TARGETS, json.monthTargets);
-    if(json.slaRevenue  !== undefined) SLA_CURR = json.slaRevenue;
-    if(json.slaPrevRevenue !== undefined) SLA_PREV = json.slaPrevRevenue;
-    if(json.slaRevenue !== undefined) SLA_REVENUE[MONTHS[2]] = json.slaRevenue;
-    if(json.slaPrevRevenue !== undefined && MONTHS[1]) SLA_REVENUE[MONTHS[1]] = json.slaPrevRevenue;
+    if(json.monthTargets) Object.assign(MONTH_TARGETS, json.monthTargets);
 
-    // Update TD costs with adhoc only (SLA is separate)
-    // If API returns adhocRevenue per tech, use that; otherwise keep TD as-is
+    // ── Rolling 3-month window — always use what API returns ──
+    if(json.threeMonths && json.threeMonths.length >= 2){
+      const tm = json.threeMonths;
+      if(tm.length === 3){ MONTHS[0]=tm[0]; MONTHS[1]=tm[1]; MONTHS[2]=tm[2]; }
+      else if(tm.length === 2){ MONTHS[1]=tm[0]; MONTHS[2]=tm[1]; }
+    } else {
+      if(json.month)      MONTHS[2] = json.month;
+      if(json.prevMonth)  MONTHS[1] = json.prevMonth;
+      if(json.prev2Month) MONTHS[0] = json.prev2Month;
+    }
 
+    // ── SLA for all 3 months ──
+    if(json.sla3 && json.sla3.length){
+      const offset = 3 - json.sla3.length;
+      json.sla3.forEach((v,i)=>{ SLA_REVENUE[MONTHS[offset+i]] = v; });
+      SLA_CURR = json.sla3[json.sla3.length-1] || 0;
+    } else {
+      if(json.slaRevenue !== undefined){ SLA_CURR = json.slaRevenue; SLA_REVENUE[MONTHS[2]] = json.slaRevenue; }
+    }
+
+    // ── Adhoc team totals ──
+    if(json.adhoc3 && json.adhoc3.length === 3){
+      ADHOC3[0] = json.adhoc3[0];
+      ADHOC3[1] = json.adhoc3[1];
+      ADHOC3[2] = json.adhoc3[2];
+    }
+
+    // ── Per-tech data for all 3 months ──
+    const apiMonths = [json.prev2Techs, json.prevTechs, json.techs];
     TECHS.forEach(t=>{
-      if(json.techs&&json.techs[t]){
-        const d=json.techs[t];
-        TD[t].appt[2] =d.appt||0; TD[t].jobs[2]=d.jobs||0;
-        TD[t].cost[2] =d.cost||0; TD[t].travel[2]=d.travel||0;
-      }
-      if(json.prevTechs&&json.prevTechs[t]){
-        const p=json.prevTechs[t];
-        if(p.appt) TD[t].appt[1]=p.appt;
-        if(p.jobs) TD[t].jobs[1]=p.jobs;
-        if(p.cost) TD[t].cost[1]=p.cost;
-      }
+      apiMonths.forEach((tm,mi)=>{
+        if(tm && tm[t]){
+          TD[t].appt[mi]   = tm[t].appt   || 0;
+          TD[t].jobs[mi]   = tm[t].jobs   || 0;
+          TD[t].cost[mi]   = tm[t].cost   || 0;
+          TD[t].travel[mi] = tm[t].travel || 0;
+        }
+      });
     });
 
-    if(json.praise&&json.praise.length) PRAISE=json.praise;
-    console.log('Live data loaded:',json.month,'generated:',json.generatedAt);
-  }catch(e){
-    console.warn('Live data unavailable, showing last known data:',e.message);
+    if(json.praise && json.praise.length) PRAISE = json.praise;
+    console.log('Live data loaded — months:', MONTHS.join(' | '), '| generated:', json.generatedAt);
+
+  } catch(e){
+    console.warn('Live data unavailable, showing last known data:', e.message);
   }
-  // Always re-render whether live data loaded or not
   updateHeader();
   buildCharts();
   buildPills();
