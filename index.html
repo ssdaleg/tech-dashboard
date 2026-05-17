@@ -9,127 +9,113 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --ss-navy:    #0A1628;
-  --ss-blue:    #0D3B6E;
-  --ss-mid:     #1565C0;
-  --ss-teal:    #00838F;
-  --ss-lteal:   #00ACC1;
-  --ss-sky:     #B3E5FC;
-  --ss-gold:    #F5A623;
-  --ss-silver:  #90A4AE;
-  --ss-bronze:  #A1887F;
-  --ss-green:   #00C853;
-  --ss-amber:   #FFB300;
-  --ss-red:     #E53935;
-  --ss-surface: #0F1F3D;
-  --ss-card:    #152744;
-  --ss-border:  rgba(0,172,193,0.15);
-  --ss-text:    #E8F4FD;
-  --ss-muted:   #607D8B;
+  --navy:#0A1628;--blue:#0D3B6E;--teal:#00838F;--lteal:#00ACC1;--sky:#B3E5FC;
+  --gold:#F5A623;--green:#00C853;--amber:#FFB300;--red:#E53935;
+  --surface:#0F1F3D;--card:#152744;--border:rgba(0,172,193,0.15);
+  --text:#E8F4FD;--muted:#607D8B;
 }
-html,body{width:100%;height:100%;background:var(--ss-navy);color:var(--ss-text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;overflow:hidden}
+html,body{width:100%;height:100%;background:var(--navy);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;overflow:hidden}
+#app{width:100vw;height:100vh;display:grid;grid-template-rows:50px 1fr 112px}
 
-/* ── Layout ── */
-#app{width:100vw;height:100vh;display:grid;grid-template-rows:48px 1fr 46px}
-
-/* ── Header ── */
-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 20px;
-  background:linear-gradient(90deg,var(--ss-blue) 0%,var(--ss-teal) 100%);
-  border-bottom:1px solid var(--ss-border);
-}
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;padding:0 18px;
+  background:linear-gradient(90deg,var(--blue),var(--teal));border-bottom:1px solid var(--border)}
 .logo{display:flex;align-items:center;gap:10px}
-.logo-mark{
-  width:32px;height:32px;border-radius:8px;
-  background:linear-gradient(135deg,var(--ss-lteal),var(--ss-mid));
-  display:flex;align-items:center;justify-content:center;
-  font-weight:900;font-size:14px;color:#fff;letter-spacing:-1px;
-}
-.logo-text{font-size:16px;font-weight:700;letter-spacing:0.5px;color:#fff}
-.logo-text span{opacity:0.65;font-weight:400;margin-left:4px;font-size:13px}
+.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--lteal),#1565C0);
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff}
+.logo-text{font-size:15px;font-weight:700;color:#fff}
+.logo-text span{opacity:0.6;font-weight:400;font-size:12px;margin-left:4px}
+.rev-strip{flex:1;max-width:480px;margin:0 28px}
+.rev-top{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.65);margin-bottom:5px}
+.rev-top strong{color:#fff}
+.rev-track{height:10px;background:rgba(255,255,255,0.12);border-radius:5px;overflow:hidden}
+.rev-fill{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--lteal),var(--green));transition:width 1.5s ease;width:0%}
+.hdr-r{display:flex;align-items:center;gap:12px}
+.badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:16px;white-space:nowrap}
+.b-mtd{background:rgba(0,172,193,0.2);color:var(--sky);border:1px solid rgba(0,172,193,0.35)}
+.b-mon{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2)}
+#clock{font-size:17px;font-weight:600;color:rgba(255,255,255,0.55);font-variant-numeric:tabular-nums}
 
-/* Revenue target bar in header */
-.rev-target-wrap{flex:1;max-width:420px;margin:0 32px}
-.rev-target-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:4px}
-.rev-target-label strong{color:#fff}
-.rev-bar-track{height:8px;background:rgba(255,255,255,0.15);border-radius:4px;overflow:hidden;position:relative}
-.rev-bar-fill{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--ss-lteal),var(--ss-green));transition:width 1.5s ease}
-.rev-bar-target{position:absolute;right:0;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.4)}
+/* MAIN: 2 chart columns + right praise panel */
+#main{display:grid;grid-template-columns:1fr 1fr 210px;gap:1px;background:var(--border);overflow:hidden}
 
-.header-right{display:flex;align-items:center;gap:14px}
-.badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:0.3px;white-space:nowrap}
-.badge-mtd{background:rgba(0,172,193,0.25);color:var(--ss-sky);border:1px solid rgba(0,172,193,0.4)}
-.badge-month{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2)}
-#live-time{font-size:18px;font-weight:600;color:rgba(255,255,255,0.6);font-variant-numeric:tabular-nums;letter-spacing:1px}
-
-/* ── Main grid ── */
-#main{display:grid;grid-template-columns:1fr 1fr 200px;grid-template-rows:1fr 1fr;gap:1px;background:var(--ss-border);overflow:hidden}
-.panel{background:var(--ss-surface);padding:12px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
-.panel-full{grid-column:1/3}
-
-.panel-title{
-  font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:var(--ss-lteal);display:flex;align-items:center;gap:8px
-}
-.panel-title::after{content:'';flex:1;height:1px;background:var(--ss-border)}
-
-/* ── Praise panel (right column, spans both rows) ── */
-#praise-panel{grid-column:3;grid-row:1/3;background:var(--ss-surface);border-left:1px solid var(--ss-border);
-  padding:12px 10px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
-.praise-card{background:var(--ss-card);border:1px solid var(--ss-border);border-radius:8px;padding:8px;flex-shrink:0}
-.praise-card.featured{border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.05)}
-.praise-stars{color:var(--ss-gold);font-size:10px;letter-spacing:1px;margin-bottom:3px}
-.praise-text{font-size:10px;line-height:1.5;color:var(--ss-text);opacity:0.85;font-style:italic}
-.praise-from{font-size:9px;color:var(--ss-muted);margin-top:3px}
-.praise-tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 6px;border-radius:10px;margin-top:3px;letter-spacing:0.5px;text-transform:uppercase}
-.add-btn{margin-top:auto;background:rgba(0,131,143,0.15);border:1px solid rgba(0,172,193,0.3);
-  color:var(--ss-lteal);font-size:11px;font-weight:600;padding:7px;border-radius:7px;
-  cursor:pointer;text-align:center;transition:all 0.2s;font-family:inherit}
-.add-btn:hover{background:rgba(0,131,143,0.3)}
-
-/* ── Chart wrappers ── */
+/* Each chart column: 2 stacked panels */
+.col{display:grid;grid-template-rows:1fr 1fr;gap:1px;background:var(--border)}
+.panel{background:var(--surface);padding:10px 14px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.p-title{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--lteal);display:flex;align-items:center;gap:6px}
+.p-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.p-sub{font-size:9px;color:var(--muted);line-height:1.4;margin-top:-2px}
 .chart-wrap{flex:1;position:relative;min-height:0}
 
-/* ── Bottom ticker ── */
-#bottom-bar{
-  background:var(--ss-blue);border-top:1px solid var(--ss-border);
-  display:flex;align-items:stretch;overflow:hidden
+/* Right praise panel */
+#praise-panel{background:var(--surface);border-left:1px solid var(--border);
+  padding:12px 10px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
+@keyframes praise-arrive{
+  0%{transform:translateY(-12px) scale(0.96);opacity:0;box-shadow:0 0 0 0 rgba(245,166,35,0)}
+  40%{transform:translateY(2px) scale(1.01);opacity:1;box-shadow:0 0 22px 4px rgba(245,166,35,0.35)}
+  70%{transform:translateY(-1px) scale(1);box-shadow:0 0 12px 2px rgba(245,166,35,0.2)}
+  100%{transform:translateY(0) scale(1);box-shadow:0 0 8px 1px rgba(245,166,35,0.12)}
 }
-.tech-pill{
-  flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:4px 8px;border-right:1px solid var(--ss-border);
-  position:relative;overflow:hidden;min-width:0;
+@keyframes gold-pulse{
+  0%,100%{box-shadow:0 0 8px 1px rgba(245,166,35,0.12);border-color:rgba(245,166,35,0.5)}
+  50%{box-shadow:0 0 20px 5px rgba(245,166,35,0.35);border-color:rgba(245,166,35,0.9)}
 }
-.tech-pill:last-child{border-right:none}
-.tp-name{font-size:10px;font-weight:700;color:var(--ss-lteal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tp-jobs{font-size:16px;font-weight:900;line-height:1;color:#fff;font-variant-numeric:tabular-nums}
-.tp-jobs span{font-size:9px;font-weight:400;color:var(--ss-muted);margin-left:2px}
-.tp-bar-track{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:3px}
-.tp-bar-fill{height:3px;border-radius:2px;transition:width 1.2s ease}
-.tp-mom{font-size:9px;margin-top:2px;font-weight:600}
-.tp-mom.up{color:var(--ss-green)}.tp-mom.down{color:var(--ss-red)}.tp-mom.flat{color:var(--ss-muted)}
-.crown{position:absolute;top:3px;right:4px;font-size:10px}
+.praise-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;flex-shrink:0;transition:border-color 0.3s}
+.praise-card.ft{border-color:rgba(245,166,35,0.5);background:linear-gradient(135deg,rgba(245,166,35,0.08),rgba(0,131,143,0.05));
+  animation:praise-arrive 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards, gold-pulse 2.5s ease-in-out 0.6s infinite}
+.praise-new-banner{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.praise-new-banner::before{content:'★ NEW';background:var(--gold);color:var(--navy);
+  padding:1px 5px;border-radius:3px;font-size:7px;letter-spacing:1px}
+.p-stars{color:var(--gold);font-size:10px;letter-spacing:1px;margin-bottom:2px}
+.p-text{font-size:10px;line-height:1.45;opacity:0.85;font-style:italic}
+.p-from{font-size:9px;color:var(--muted);margin-top:3px}
+.p-tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;
+  margin-top:3px;text-transform:uppercase;letter-spacing:0.5px}
+.add-btn{margin-top:auto;background:rgba(0,131,143,0.12);border:1px solid rgba(0,172,193,0.25);
+  color:var(--lteal);font-size:10px;font-weight:600;padding:7px;border-radius:6px;
+  cursor:pointer;text-align:center;font-family:inherit}
+.add-btn:hover{background:rgba(0,131,143,0.25)}
 
-/* ── Modal ── */
+/* BOTTOM BAR */
+#bottom{border-top:1px solid var(--border);background:var(--blue);display:flex;align-items:stretch;overflow:hidden}
+.tp{flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:5px 7px;border-right:1px solid var(--border);position:relative;min-width:0}
+.tp:last-child{border-right:none}
+.tp-name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.tp-nums{display:flex;gap:5px;flex-wrap:nowrap;margin-bottom:3px}
+.tp-n{font-size:9px;color:var(--muted);white-space:nowrap}
+.tp-n strong{font-weight:700;font-variant-numeric:tabular-nums}
+.tp-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-bottom:2px}
+.tp-bar-fill{height:3px;border-radius:2px;transition:width 1.2s ease}
+.tp-bot{display:flex;justify-content:space-between;align-items:center}
+.tp-rev{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tp-rev strong{color:var(--text);font-weight:600}
+.tp-mom{font-size:8px;font-weight:600;flex-shrink:0;margin-left:4px}
+.tp-mom.up{color:var(--green)}.tp-mom.dn{color:var(--red)}.tp-mom.fl{color:var(--muted)}
+.tp-crown{position:absolute;top:3px;right:4px;font-size:10px;line-height:1}
+
+/* MODAL */
 #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center}
 #modal.open{display:flex}
-.modal-box{background:var(--ss-card);border:1px solid var(--ss-border);border-radius:14px;padding:22px;width:400px}
-.modal-title{font-size:18px;font-weight:700;margin-bottom:14px;color:var(--ss-lteal)}
-.modal-box label{display:block;font-size:10px;color:var(--ss-muted);margin-bottom:3px;margin-top:10px;text-transform:uppercase;letter-spacing:0.5px}
-.modal-box input,.modal-box select,.modal-box textarea{
-  width:100%;background:var(--ss-surface);border:1px solid var(--ss-border);border-radius:7px;
-  color:var(--ss-text);font-family:inherit;font-size:13px;padding:8px 11px}
-.modal-box textarea{height:72px;resize:none}
-.star-row{display:flex;gap:4px;margin:5px 0}
-.star-btn{background:none;border:none;font-size:20px;cursor:pointer;opacity:0.25;transition:opacity 0.1s;color:var(--ss-gold)}
-.star-btn.on{opacity:1}
-.modal-actions{display:flex;gap:8px;margin-top:14px}
-.btn-save{flex:1;background:var(--ss-teal);border:none;color:#fff;font-family:inherit;font-weight:600;font-size:13px;padding:9px;border-radius:7px;cursor:pointer}
-.btn-cancel{background:none;border:1px solid var(--ss-border);color:var(--ss-muted);font-family:inherit;font-size:13px;padding:9px 14px;border-radius:7px;cursor:pointer}
-
-@keyframes pulse-teal{0%,100%{box-shadow:0 0 0 0 rgba(0,172,193,0)}50%{box-shadow:0 0 16px 3px rgba(0,172,193,0.2)}}
+.mbox{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;width:390px}
+.mtitle{font-size:17px;font-weight:700;color:var(--lteal);margin-bottom:12px}
+.mbox label{display:block;font-size:9px;color:var(--muted);margin-bottom:3px;margin-top:10px;
+  text-transform:uppercase;letter-spacing:0.5px}
+.mbox input,.mbox select,.mbox textarea{width:100%;background:var(--surface);
+  border:1px solid var(--border);border-radius:7px;color:var(--text);
+  font-family:inherit;font-size:12px;padding:7px 10px}
+.mbox textarea{height:70px;resize:none}
+.star-row{display:flex;gap:5px;margin:5px 0}
+.sbtn{background:none;border:none;font-size:22px;cursor:pointer;opacity:0.2;color:var(--gold)}
+.sbtn.on{opacity:1}
+.macts{display:flex;gap:8px;margin-top:12px}
+.btn-save{flex:1;background:var(--teal);border:none;color:#fff;font-family:inherit;
+  font-weight:600;font-size:12px;padding:9px;border-radius:7px;cursor:pointer}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);
+  font-family:inherit;font-size:12px;padding:9px 12px;border-radius:7px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -140,394 +126,393 @@ header{
     <div class="logo-mark">SS</div>
     <div class="logo-text">Superior Support <span>Performance Centre</span></div>
   </div>
-
-  <div class="rev-target-wrap">
-    <div class="rev-target-label">
-      <span>Team Revenue MTD</span>
+  <div class="rev-strip">
+    <div class="rev-top">
+      <span>Team Revenue MTD vs Monthly Target</span>
       <strong id="rev-label">Loading...</strong>
     </div>
-    <div class="rev-bar-track">
-      <div class="rev-bar-fill" id="rev-bar" style="width:0%"></div>
-    </div>
+    <div class="rev-track"><div class="rev-fill" id="rev-fill"></div></div>
   </div>
-
-  <div class="header-right">
-    <span class="badge badge-mtd" id="mtd-badge">Loading...</span>
-    <span class="badge badge-month" id="month-badge">—</span>
-    <span id="live-time"></span>
+  <div class="hdr-r">
+    <span class="badge b-mtd" id="mtd-badge">Loading...</span>
+    <span class="badge b-mon" id="month-badge">—</span>
+    <span id="clock"></span>
   </div>
 </header>
 
 <div id="main">
 
-  <!-- TOP LEFT: Utilisation -->
-  <div class="panel" id="util-panel">
-    <div class="panel-title">⏱ Billable Utilisation % vs 6.5h/day target</div>
-    <div class="chart-wrap"><canvas id="chartUtil"></canvas></div>
+  <!-- LEFT COLUMN: Utilisation + Jobs -->
+  <div class="col">
+    <div class="panel">
+      <div class="p-title">⏱ Billable Utilisation %</div>
+      <div class="p-sub">Appt hrs worked ÷ available hrs (working days × 6.5h daily target). 3-month trend. Green line = 100% target.</div>
+      <div class="chart-wrap"><canvas id="c1"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="p-title">🔧 Jobs Completed</div>
+      <div class="p-sub">Jobs closed per technician. 3-month trend — brighter bar = current month. Sorted by current month performance.</div>
+      <div class="chart-wrap"><canvas id="c2"></canvas></div>
+    </div>
   </div>
 
-  <!-- TOP RIGHT: Jobs -->
-  <div class="panel" id="jobs-panel">
-    <div class="panel-title">🔧 Jobs Completed — MTD</div>
-    <div class="chart-wrap"><canvas id="chartJobs"></canvas></div>
+  <!-- RIGHT COLUMN: Avg Hrs/Day + Revenue -->
+  <div class="col">
+    <div class="panel">
+      <div class="p-title">📋 Avg Hours Logged / Day</div>
+      <div class="p-sub">Total appt hrs ÷ working days elapsed. Daily productivity per tech. Gold line = 6.5h target.</div>
+      <div class="chart-wrap"><canvas id="c3"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="p-title">💰 Revenue Generated MTD</div>
+      <div class="p-sub">Revenue invoiced per technician this month vs previous month. Dashed line = each tech's share of team target.</div>
+      <div class="chart-wrap"><canvas id="c4"></canvas></div>
+    </div>
   </div>
 
-  <!-- BOTTOM LEFT+CENTRE: Revenue -->
-  <div class="panel panel-full" id="rev-panel">
-    <div class="panel-title">💰 Revenue Generated MTD vs Team Target</div>
-    <div class="chart-wrap"><canvas id="chartRev"></canvas></div>
-  </div>
-
-  <!-- RIGHT: Praise (spans both rows) -->
+  <!-- RIGHT PANEL: SS Recognition -->
   <div id="praise-panel">
-    <div class="panel-title" style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ss-lteal)">⭐ SS Recognition</div>
+    <div class="p-title" style="font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--lteal)">⭐ SS Recognition</div>
     <div id="praise-feed" style="display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1"></div>
     <button class="add-btn" onclick="openModal()">+ Add Customer Feedback</button>
   </div>
 
 </div>
 
-<!-- BOTTOM: Tech pills -->
-<div id="bottom-bar" role="list" aria-label="Technician summary"></div>
+<!-- BOTTOM: Tech at a glance -->
+<!-- Each pill shows: NAME | UTIL% | JOBS | AVG HRS/DAY | REVENUE MTD | MoM trend -->
+<div id="bottom" role="list" aria-label="Technician summary"></div>
 
 </div>
 
 <!-- MODAL -->
 <div id="modal" role="dialog" aria-modal="true">
-  <div class="modal-box">
-    <div class="modal-title">Add Customer Feedback</div>
-    <label>Technician</label>
-    <select id="m-tech"></select>
-    <label>Customer Name</label>
-    <input id="m-cust" type="text" placeholder="Company / Contact name">
+  <div class="mbox">
+    <div class="mtitle">Add Customer Feedback</div>
+    <label>Technician</label><select id="m-tech"></select>
+    <label>Customer</label><input id="m-cust" type="text" placeholder="Company / Contact name">
     <label>Rating</label>
     <div class="star-row">
-      <button class="star-btn on" onclick="setStar(1)">★</button>
-      <button class="star-btn on" onclick="setStar(2)">★</button>
-      <button class="star-btn on" onclick="setStar(3)">★</button>
-      <button class="star-btn on" onclick="setStar(4)">★</button>
-      <button class="star-btn on" onclick="setStar(5)">★</button>
+      <button class="sbtn on" onclick="setStar(1)">★</button>
+      <button class="sbtn on" onclick="setStar(2)">★</button>
+      <button class="sbtn on" onclick="setStar(3)">★</button>
+      <button class="sbtn on" onclick="setStar(4)">★</button>
+      <button class="sbtn on" onclick="setStar(5)">★</button>
     </div>
     <label>Feedback</label>
     <textarea id="m-text" placeholder="What did the customer say?"></textarea>
-    <div class="modal-actions">
+    <div class="macts">
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save" onclick="submitPraise()">Save Feedback</button>
+      <button class="btn-save" onclick="submitPraise()">Save</button>
     </div>
   </div>
 </div>
 
 <script>
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_URL = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/dashboard-data';
+const API_URL        = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/dashboard-data';
 const ADD_PRAISE_URL = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/add-praise';
 
-const TECHS = ['Aristo','Ashley','Bryon','Chris','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
-const INITIALS = {Aristo:'AR',Ashley:'AS',Bryon:'BR',Chris:'CH',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Richard:'RI',Riedhor:'RH'};
-const COLORS = ['#4F46E5','#0891B2','#059669','#D97706','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#9333EA','#00ACC1'];
-const COLOR = t => COLORS[TECHS.indexOf(t)];
+const TECHS    = ['Aristo','Ashley','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
+const INITIALS = {Aristo:'AR',Ashley:'AS',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Richard:'RI',Riedhor:'RH'};
+const COLORS   = ['#4F46E5','#0891B2','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#9333EA','#00ACC1'];
+const COLOR    = t => COLORS[TECHS.indexOf(t)] || '#607D8B';
 
-// Fallback data
-let DATA = {
-  month:'Apr 2026', prevMonth:'Mar 2026',
-  workDaysMonth:20, workDaysDone:14, dailyTarget:6.5, targetHrsMTD:91,
-  revenueTarget:300000, totalRevenue:0,
-  techs:{
-    Aristo: {appt:5,inv:2,jobs:5,cost:1035,travel:0.3,billPct:5},
-    Ashley: {appt:93.26,inv:73.15,jobs:79,cost:32767.5,travel:97.45,billPct:102},
-    Bryon:  {appt:4.15,inv:5.5,jobs:8,cost:2930,travel:0,billPct:5},
-    Chris:  {appt:1.45,inv:2.5,jobs:3,cost:322.5,travel:1,billPct:2},
-    David:  {appt:92.37,inv:61,jobs:68,cost:29600,travel:368.18,billPct:102},
-    Jarryd: {appt:61.57,inv:35,jobs:50,cost:12357,travel:33,billPct:68},
-    Mondre: {appt:82.45,inv:64,jobs:152,cost:28617,travel:2,billPct:91},
-    Naeem:  {appt:105.43,inv:93.3,jobs:64,cost:39482.5,travel:36.2,billPct:116},
-    Raees:  {appt:100.25,inv:59.5,jobs:115,cost:21990,travel:1.1,billPct:110},
-    Richard:{appt:0,inv:1,jobs:0,cost:0,travel:0,billPct:0},
-    Riedhor:{appt:103.55,inv:90.25,jobs:130,cost:40860.3,travel:20.25,billPct:114},
-  },
-  prevTechs:null,
-  praise:[
-    {tech:'Naeem',customer:'Blue Label Telecoms',stars:5,text:'Naeem resolved our server issue in record time. Absolutely professional.',date:'14 Apr'},
-    {tech:'Riedhor',customer:'Grapevine Trading',stars:5,text:'Riedhor went above and beyond to get our systems back online over the weekend.',date:'11 Apr'},
-    {tech:'Ashley',customer:'Cape Timber Co.',stars:5,text:'Extremely efficient. Had our network sorted within the hour.',date:'9 Apr'},
-    {tech:'Raees',customer:'ACSA Logistics',stars:4,text:'Great service. On-site quickly and fixed the issue on first visit.',date:'7 Apr'},
-  ]
+const PRAISE_PEOPLE = [
+  'Aristo','Ashley','Bryon','Chris','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor',
+  'Tracy','Merle','Anees','Melissa','Ferial','Ian'
+];
+
+const DAILY_TARGET  = 6.5;
+const WORK_DAYS_MAP = {'Feb 2026':20,'Mar 2026':22,'Apr 2026':20,'May 2026':21,'Jun 2026':21};
+
+let MONTHS          = ['Feb 2026','Mar 2026','Apr 2026'];
+let WORK_DAYS_DONE  = 14;
+let WORK_DAYS_MONTH = 20;
+let REV_TARGET      = 300000;
+
+// ── FALLBACK DATA — 3 months [0]=Feb [1]=Mar [2]=Apr ─────────────────────────
+let TD = {
+  Aristo:  {appt:[0,0,5],        jobs:[3,7,5],      cost:[0,0,1035],     travel:[0,0,0.3]},
+  Ashley:  {appt:[57.4,140.2,93.26], jobs:[40,84,79],   cost:[16452,46821,32767],travel:[22.16,43.8,97.45]},
+  David:   {appt:[0,98.1,92.37], jobs:[0,70,68],    cost:[0,31237,29600],travel:[0,92.1,368.18]},
+  Jarryd:  {appt:[24.38,43,61.57],jobs:[45,61,50],  cost:[10700,8836,12357],travel:[45.17,50.35,33]},
+  Mondre:  {appt:[83,94.24,82.45],jobs:[98,160,152], cost:[12860,40830,28617],travel:[2.45,7.4,2]},
+  Naeem:   {appt:[85.32,115.34,105.43],jobs:[66,78,64],cost:[41519,43227,39482],travel:[31.14,44.4,36.2]},
+  Raees:   {appt:[120.5,136.55,100.25],jobs:[127,136,115],cost:[13650,37922,21990],travel:[0,2.19,1.1]},
+  Richard: {appt:[99.56,84.29,0],  jobs:[50,61,0],  cost:[17028,22116,0],  travel:[31.5,33.14,0]},
+  Riedhor: {appt:[99.56,108,103.55],jobs:[84,112,130],cost:[17581,27103,40860],travel:[31.5,23.59,20.25]},
 };
 
+let PRAISE = [
+  {tech:'Naeem',  customer:'Blue Label Telecoms',stars:5,text:'Naeem resolved our server issue in record time. Absolutely professional.',date:'14 Apr'},
+  {tech:'Riedhor',customer:'Grapevine Trading',  stars:5,text:'Riedhor went above and beyond to get our systems back online.',date:'11 Apr'},
+  {tech:'Ashley', customer:'Cape Timber Co.',    stars:5,text:'Extremely efficient. Had our network sorted within the hour.',date:'9 Apr'},
+  {tech:'Raees',  customer:'ACSA Logistics',     stars:4,text:'Great service. On-site quickly and fixed the issue on first visit.',date:'7 Apr'},
+  {tech:'Mondre', customer:'Konica Minolta SA',  stars:5,text:"Mondre's attitude and knowledge is always top-class.",date:'3 Apr'},
+];
+
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-const fmtR   = v => 'R\u202F' + Math.round(v).toLocaleString('en-ZA');
-const sorted = key => [...TECHS].sort((a,b) => (DATA.techs[b][key]||0)-(DATA.techs[a][key]||0));
-const maxVal = key => Math.max(...TECHS.map(t => DATA.techs[t][key]||0)) || 1;
+const fmtR = v => 'R\u202F'+Math.round(v).toLocaleString('en-ZA');
 
-// ── CHARTS ────────────────────────────────────────────────────────────────────
-const TIP  = {backgroundColor:'#0F1F3D',titleColor:'#E8F4FD',bodyColor:'#607D8B',borderColor:'rgba(0,172,193,0.3)',borderWidth:1,padding:10};
-const GRID = {color:'rgba(0,172,193,0.07)'};
-const XTICK = {color:'#607D8B',font:{size:11,weight:'600'}};
-const YTICK = {color:'#607D8B',font:{size:10}};
+function billPct(tech, mi) {
+  const appt  = (TD[tech].appt||[])[mi]||0;
+  const month = MONTHS[mi];
+  const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
+  const avail = wd * DAILY_TARGET;
+  return avail>0 ? Math.round(appt/avail*100) : 0;
+}
 
-let chartUtil, chartJobs, chartRev;
+function avgHrs(tech, mi) {
+  const appt  = (TD[tech].appt||[])[mi]||0;
+  const month = MONTHS[mi];
+  const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
+  return wd>0 ? +(appt/wd).toFixed(2) : 0;
+}
+
+function sortedBy(key, mi) {
+  return [...TECHS].sort((a,b)=>{
+    const va = key==='util'?billPct(a,mi):key==='avg'?avgHrs(a,mi):(TD[a][key]||[])[mi]||0;
+    const vb = key==='util'?billPct(b,mi):key==='avg'?avgHrs(b,mi):(TD[b][key]||[])[mi]||0;
+    return vb-va;
+  });
+}
+
+// ── CHART THEME ───────────────────────────────────────────────────────────────
+const TIP  = {backgroundColor:'#0F1F3D',titleColor:'#E8F4FD',bodyColor:'#607D8B',
+              borderColor:'rgba(0,172,193,0.25)',borderWidth:1,padding:8};
+const GRID = {color:'rgba(0,172,193,0.06)'};
+const TX   = {color:'#607D8B',font:{size:10,weight:'600'},maxRotation:0,autoSkip:false};
+const TY   = {color:'#607D8B',font:{size:9}};
+const LEG  = {display:true,position:'top',labels:{color:'#607D8B',font:{size:9},boxWidth:8,padding:5}};
+const MC   = ['rgba(0,131,143,0.28)','rgba(0,131,143,0.5)','rgba(0,172,193,1)'];
+
+let charts = {};
+
+function dline(chart, val, color, label) {
+  const {ctx,chartArea:{left,right},scales:{y}} = chart;
+  const yp = y.getPixelForValue(val);
+  if (yp<chart.chartArea.top||yp>chart.chartArea.bottom) return;
+  ctx.save();
+  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(left,yp);ctx.lineTo(right,yp);ctx.stroke();
+  ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='600 9px sans-serif';
+  ctx.fillText(label,right-ctx.measureText(label).width-4,yp-3);
+  ctx.restore();
+}
 
 function buildCharts() {
-  const utilSorted = sorted('billPct');
-  const jobsSorted = sorted('jobs');
+  const uOrder = sortedBy('util',2);
+  const jOrder = sortedBy('jobs',2);
+  const hOrder = sortedBy('avg',2);
+  const rOrder = sortedBy('cost',2);
 
-  // ── Utilisation chart ──
-  if (chartUtil) chartUtil.destroy();
-  chartUtil = new Chart(document.getElementById('chartUtil'), {
-    type: 'bar',
-    data: {
-      labels: utilSorted,
-      datasets: [
-        {
-          label: DATA.prevMonth || 'Prev Month',
-          data: utilSorted.map(t => DATA.prevTechs ? (DATA.prevTechs[t] ? DATA.prevTechs[t].billPct : 0) : 0),
-          backgroundColor: 'rgba(0,131,143,0.25)',
-          borderRadius: 3, borderSkipped: false,
-        },
-        {
-          label: DATA.month,
-          data: utilSorted.map(t => DATA.techs[t].billPct),
-          backgroundColor: utilSorted.map(t => {
-            const p = DATA.techs[t].billPct;
-            return p>=100?'#00C853':p>=80?'#F5A623':p>=60?'#FFB300':'#E53935';
-          }),
-          borderRadius: 4, borderSkipped: false,
-        }
-      ]
+  // ── C1: Billable Utilisation % ──
+  if(charts.c1) charts.c1.destroy();
+  charts.c1 = new Chart(document.getElementById('c1'),{
+    type:'bar',
+    data:{
+      labels:uOrder,
+      datasets:MONTHS.map((m,mi)=>({
+        label:m,
+        data:uOrder.map(t=>billPct(t,mi)),
+        backgroundColor:mi===2?uOrder.map(t=>{const p=billPct(t,2);return p>=100?'#00C853':p>=80?'#F5A623':p>=60?'#FFB300':'#E53935'}):MC[mi],
+        borderRadius:mi===2?4:2,borderSkipped:false
+      }))
     },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:true,position:'top',labels:{color:'#607D8B',font:{size:10},boxWidth:10,padding:8}},
-        tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw}% billable`}}
-      },
-      scales:{
-        x:{ticks:XTICK,grid:GRID},
-        y:{ticks:{...YTICK,callback:v=>v+'%'},grid:GRID,max:130,
-           title:{display:true,text:'% of 6.5h/day target',color:'#607D8B',font:{size:10}}}
-      }
-    },
-    plugins:[{
-      id:'targetLine',
-      afterDraw(chart){
-        const {ctx,chartArea:{left,right},scales:{y}} = chart;
-        const yp = y.getPixelForValue(100);
-        ctx.save();
-        ctx.strokeStyle='rgba(0,172,193,0.5)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
-        ctx.beginPath();ctx.moveTo(left,yp);ctx.lineTo(right,yp);ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle='rgba(0,172,193,0.7)';ctx.font='600 10px sans-serif';
-        ctx.fillText('TARGET 100%',right-78,yp-4);
-        ctx.restore();
-      }
-    }]
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw}% billable`}}},
+      scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>v+'%'},grid:GRID,max:130,
+        title:{display:true,text:'% of available hrs',color:'#607D8B',font:{size:9}}}}},
+    plugins:[{id:'tl',afterDraw(c){dline(c,100,'rgba(0,200,83,0.6)','TARGET 100%')}}]
   });
 
-  // ── Jobs chart ──
-  if (chartJobs) chartJobs.destroy();
-  chartJobs = new Chart(document.getElementById('chartJobs'), {
-    type: 'bar',
-    data: {
-      labels: jobsSorted,
-      datasets: [
-        {
-          label: DATA.prevMonth || 'Prev Month',
-          data: jobsSorted.map(t => DATA.prevTechs ? (DATA.prevTechs[t] ? DATA.prevTechs[t].jobs : 0) : 0),
-          backgroundColor: 'rgba(0,131,143,0.25)',
-          borderRadius: 3, borderSkipped: false,
-        },
-        {
-          label: DATA.month,
-          data: jobsSorted.map(t => DATA.techs[t].jobs),
-          backgroundColor: jobsSorted.map(t => COLORS[TECHS.indexOf(t)]),
-          borderRadius: 4, borderSkipped: false,
-        }
-      ]
+  // ── C2: Jobs Completed ──
+  if(charts.c2) charts.c2.destroy();
+  charts.c2 = new Chart(document.getElementById('c2'),{
+    type:'bar',
+    data:{
+      labels:jOrder,
+      datasets:MONTHS.map((m,mi)=>({
+        label:m,
+        data:jOrder.map(t=>(TD[t].jobs||[])[mi]||0),
+        backgroundColor:mi===2?jOrder.map(t=>COLOR(t)):MC[mi],
+        borderRadius:mi===2?4:2,borderSkipped:false
+      }))
     },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:true,position:'top',labels:{color:'#607D8B',font:{size:10},boxWidth:10,padding:8}},
-        tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw} jobs`}}
-      },
-      scales:{
-        x:{ticks:XTICK,grid:GRID},
-        y:{ticks:YTICK,grid:GRID,title:{display:true,text:'Jobs completed',color:'#607D8B',font:{size:10}}}
-      }
-    }
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw} jobs`}}},
+      scales:{x:{ticks:TX,grid:GRID},y:{ticks:TY,grid:GRID,
+        title:{display:true,text:'Jobs closed',color:'#607D8B',font:{size:9}}}}}
   });
 
-  // ── Revenue chart ──
-  const revTarget = DATA.revenueTarget || 1;
-  if (chartRev) chartRev.destroy();
-  chartRev = new Chart(document.getElementById('chartRev'), {
-    type: 'bar',
-    data: {
-      labels: TECHS,
-      datasets: [
-        {
-          label: DATA.prevMonth || 'Prev Month',
-          data: TECHS.map(t => DATA.prevTechs ? (DATA.prevTechs[t] ? DATA.prevTechs[t].cost : 0) : 0),
-          backgroundColor: 'rgba(0,131,143,0.25)',
-          borderRadius: 3, borderSkipped: false,
-        },
-        {
-          label: DATA.month + ' MTD',
-          data: TECHS.map(t => DATA.techs[t].cost),
-          backgroundColor: COLORS,
-          borderRadius: 4, borderSkipped: false,
-        }
-      ]
+  // ── C3: Avg Hours Logged per Day ──
+  if(charts.c3) charts.c3.destroy();
+  charts.c3 = new Chart(document.getElementById('c3'),{
+    type:'bar',
+    data:{
+      labels:hOrder,
+      datasets:MONTHS.map((m,mi)=>({
+        label:m,
+        data:hOrder.map(t=>avgHrs(t,mi)),
+        backgroundColor:mi===2?hOrder.map(t=>COLOR(t)):MC[mi],
+        borderRadius:mi===2?4:2,borderSkipped:false
+      }))
     },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{display:true,position:'top',labels:{color:'#607D8B',font:{size:10},boxWidth:10,padding:8}},
-        tooltip:{...TIP,callbacks:{label:ctx=>` ${fmtR(ctx.raw)}`}}
-      },
-      scales:{
-        x:{ticks:XTICK,grid:GRID},
-        y:{ticks:{...YTICK,callback:v=>'R'+Math.round(v/1000)+'k'},grid:GRID,
-           title:{display:true,text:'Revenue (R)',color:'#607D8B',font:{size:10}}}
-      }
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw}h avg/day`}}},
+      scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>v+'h'},grid:GRID,
+        title:{display:true,text:'Avg hrs/day',color:'#607D8B',font:{size:9}}}}},
+    plugins:[{id:'tl2',afterDraw(c){dline(c,DAILY_TARGET,'rgba(245,166,35,0.6)',DAILY_TARGET+'h target')}}]
+  });
+
+  // ── C4: Revenue MTD ──
+  const activeTechs = TECHS.filter(t=>(TD[t].cost[2]||0)>0).length||1;
+  const share       = REV_TARGET/activeTechs;
+  if(charts.c4) charts.c4.destroy();
+  charts.c4 = new Chart(document.getElementById('c4'),{
+    type:'bar',
+    data:{
+      labels:rOrder,
+      datasets:MONTHS.map((m,mi)=>({
+        label:m,
+        data:rOrder.map(t=>(TD[t].cost||[])[mi]||0),
+        backgroundColor:mi===2?rOrder.map(t=>COLOR(t)):MC[mi],
+        borderRadius:mi===2?4:2,borderSkipped:false
+      }))
     },
-    plugins:[{
-      id:'revTargetLine',
-      afterDraw(chart){
-        if (!DATA.revenueTarget) return;
-        // Draw individual share line = target / active techs
-        const activeTechs = TECHS.filter(t => DATA.techs[t].cost > 0).length || 1;
-        const share = DATA.revenueTarget / activeTechs;
-        const {ctx,chartArea:{left,right},scales:{y}} = chart;
-        const yp = y.getPixelForValue(share);
-        if (yp < chart.chartArea.top || yp > chart.chartArea.bottom) return;
-        ctx.save();
-        ctx.strokeStyle='rgba(245,166,35,0.6)';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
-        ctx.beginPath();ctx.moveTo(left,yp);ctx.lineTo(right,yp);ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle='rgba(245,166,35,0.8)';ctx.font='600 10px sans-serif';
-        ctx.fillText('SHARE: '+fmtR(share),right-100,yp-4);
-        ctx.restore();
-      }
-    }]
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${fmtR(ctx.raw)}`}}},
+      scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>'R'+Math.round(v/1000)+'k'},grid:GRID,
+        title:{display:true,text:'Revenue (R)',color:'#607D8B',font:{size:9}}}}},
+    plugins:[{id:'tl3',afterDraw(c){dline(c,share,'rgba(245,166,35,0.6)','Share: '+fmtR(share))}}]
   });
 }
 
 // ── HEADER ────────────────────────────────────────────────────────────────────
 function updateHeader() {
-  const total  = TECHS.reduce((s,t) => s + (DATA.techs[t].cost||0), 0);
-  const target = DATA.revenueTarget || 1;
-  const pct    = Math.min(total/target*100, 100);
-
-  document.getElementById('rev-bar').style.width = pct.toFixed(1) + '%';
-  document.getElementById('rev-label').textContent =
-    fmtR(total) + ' / ' + fmtR(target) + ' (' + Math.round(pct) + '%)';
-  document.getElementById('mtd-badge').textContent =
-    'MTD Day ' + DATA.workDaysDone + ' of ' + DATA.workDaysMonth + ' · Target ' + DATA.targetHrsMTD + 'h/tech';
-  document.getElementById('month-badge').textContent = DATA.month;
+  const total = TECHS.reduce((s,t)=>s+((TD[t].cost||[])[2]||0),0);
+  const pct   = Math.min(total/(REV_TARGET||1)*100,100);
+  document.getElementById('rev-fill').style.width = pct.toFixed(1)+'%';
+  document.getElementById('rev-label').textContent = fmtR(total)+' / '+fmtR(REV_TARGET)+' ('+Math.round(pct)+'%)';
+  document.getElementById('mtd-badge').textContent = 'MTD Day '+WORK_DAYS_DONE+' of '+WORK_DAYS_MONTH+' · Target '+(WORK_DAYS_DONE*DAILY_TARGET)+'h/tech';
+  document.getElementById('month-badge').textContent = MONTHS[2];
 }
 
 // ── BOTTOM PILLS ──────────────────────────────────────────────────────────────
 function buildPills() {
-  const bar = document.getElementById('bottom-bar');
-  bar.innerHTML = '';
+  const bar = document.getElementById('bottom');
+  bar.innerHTML='';
+  const jobTop = TECHS.slice().sort((a,b)=>((TD[b].jobs||[])[2]||0)-((TD[a].jobs||[])[2]||0))[0];
+  const revTop = TECHS.slice().sort((a,b)=>((TD[b].cost||[])[2]||0)-((TD[a].cost||[])[2]||0))[0];
+  const utTop  = TECHS.slice().sort((a,b)=>billPct(b,2)-billPct(a,2))[0];
 
-  const jobTop  = sorted('jobs')[0];
-  const utilTop = sorted('billPct')[0];
-  const revTop  = sorted('cost')[0];
-  const maxJ    = maxVal('jobs');
-
-  TECHS.forEach(tech => {
-    const d    = DATA.techs[tech];
+  TECHS.forEach(tech=>{
     const c    = COLOR(tech);
-    const pct  = d.billPct;
-    const barC = pct>=100?'var(--ss-green)':pct>=80?'var(--ss-gold)':pct>=60?'var(--ss-amber)':'var(--ss-red)';
-
-    // MoM indicator
-    let momHtml = '';
-    if (DATA.prevTechs && DATA.prevTechs[tech]) {
-      const diff = d.billPct - DATA.prevTechs[tech].billPct;
-      if (diff > 2)       momHtml = `<div class="tp-mom up">▲ ${diff}% vs ${DATA.prevMonth||'prev'}</div>`;
-      else if (diff < -2) momHtml = `<div class="tp-mom down">▼ ${Math.abs(diff)}% vs ${DATA.prevMonth||'prev'}</div>`;
-      else                momHtml = `<div class="tp-mom flat">→ steady</div>`;
-    }
-
-    const crowns = [jobTop===tech?'🏆':'', utilTop===tech?'⏱':'', revTop===tech?'💰':''].filter(Boolean).join('');
-
-    bar.insertAdjacentHTML('beforeend', `
-      <div class="tech-pill" role="listitem">
-        ${crowns ? `<div class="crown">${crowns}</div>` : ''}
+    const util = billPct(tech,2);
+    const prev = billPct(tech,1);
+    const diff = util-prev;
+    const avg  = avgHrs(tech,2);
+    const jobs = (TD[tech].jobs||[])[2]||0;
+    const rev  = (TD[tech].cost||[])[2]||0;
+    const barC = util>=100?'var(--green)':util>=80?'var(--gold)':util>=60?'var(--amber)':'var(--red)';
+    const mCls = diff>2?'up':diff<-2?'dn':'fl';
+    const mTxt = diff>2?`▲${diff}%`:diff<-2?`▼${Math.abs(diff)}%`:'→';
+    const cr   = [utTop===tech?'⏱':'',jobTop===tech?'🏆':'',revTop===tech?'💰':''].filter(Boolean).join('');
+    bar.insertAdjacentHTML('beforeend',`
+      <div class="tp" role="listitem">
+        ${cr?`<div class="tp-crown">${cr}</div>`:''}
         <div class="tp-name" style="color:${c}">${INITIALS[tech]} · ${tech}</div>
-        <div class="tp-jobs">${d.jobs}<span>jobs</span></div>
-        <div class="tp-bar-track"><div class="tp-bar-fill" style="width:${Math.min(pct,100)}%;background:${barC}"></div></div>
-        ${momHtml}
+        <div class="tp-nums">
+          <div class="tp-n"><strong style="color:${barC}">${util}%</strong> util</div>
+          <div class="tp-n"><strong>${jobs}</strong> jobs</div>
+          <div class="tp-n"><strong>${avg}h</strong>/day</div>
+        </div>
+        <div class="tp-bar"><div class="tp-bar-fill" style="width:${Math.min(util,100)}%;background:${barC}"></div></div>
+        <div class="tp-bot">
+          <div class="tp-rev"><strong>${fmtR(rev)}</strong> MTD</div>
+          <div class="tp-mom ${mCls}">${mTxt} vs ${MONTHS[1]||'prev'}</div>
+        </div>
       </div>`);
   });
 }
 
 // ── PRAISE ────────────────────────────────────────────────────────────────────
 function renderPraise() {
-  const feed = document.getElementById('praise-feed');
-  feed.innerHTML = '';
-  (DATA.praise || []).slice(0,5).forEach((p,i) => {
-    const c = COLOR(p.tech);
-    const stars = '★'.repeat(p.stars)+'☆'.repeat(5-p.stars);
+  const feed=document.getElementById('praise-feed');
+  feed.innerHTML='';
+  PRAISE.slice(0,5).forEach((p,i)=>{
+    const c=COLOR(p.tech);
+    const stars='★'.repeat(p.stars)+'☆'.repeat(5-p.stars);
+    const isFeatured = i===0;
     feed.insertAdjacentHTML('beforeend',`
-      <div class="praise-card ${i===0?'featured':''}">
-        <div class="praise-stars">${stars}</div>
-        <div class="praise-text">"${p.text}"</div>
-        <div class="praise-from">${p.customer} · ${p.date}</div>
-        <span class="praise-tag" style="background:${c}22;color:${c}">${p.tech}</span>
+      <div class="praise-card ${isFeatured?'ft':''}">
+        ${isFeatured?'<div class="praise-new-banner">Most recent</div>':''}
+        <div class="p-stars">${stars}</div>
+        <div class="p-text">"${p.text}"</div>
+        <div class="p-from">${p.customer} · ${p.date}</div>
+        <span class="p-tag" style="background:${c}22;color:${c}">${p.tech}</span>
       </div>`);
   });
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
-let starVal = 5;
-function openModal() {
-  const sel = document.getElementById('m-tech');
-  if (!sel.options.length) TECHS.forEach(t => sel.insertAdjacentHTML('beforeend',`<option>${t}</option>`));
+let starVal=5;
+function openModal(){
+  const sel=document.getElementById('m-tech');
+  if(!sel.options.length) PRAISE_PEOPLE.forEach(t=>sel.insertAdjacentHTML('beforeend',`<option>${t}</option>`));
   document.getElementById('modal').classList.add('open');
 }
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
-function setStar(n) {
-  starVal = n;
-  document.querySelectorAll('.star-btn').forEach((b,i) => b.classList.toggle('on', i<n));
-}
-async function submitPraise() {
-  const tech = document.getElementById('m-tech').value;
-  const cust = document.getElementById('m-cust').value.trim() || 'Anonymous';
-  const text = document.getElementById('m-text').value.trim();
-  if (!text) return;
-  try {
-    await fetch(ADD_PRAISE_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({tech, customer:cust, stars:starVal, text})
-    });
-  } catch(e) {
-    console.warn('Praise save failed:', e.message);
-  }
-  // Add locally immediately so it shows on screen
-  DATA.praise.unshift({tech, customer:cust, stars:starVal, text, date:'Today'});
-  closeModal();
-  renderPraise();
-  document.getElementById('m-cust').value = '';
-  document.getElementById('m-text').value = '';
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function setStar(n){starVal=n;document.querySelectorAll('.sbtn').forEach((b,i)=>b.classList.toggle('on',i<n));}
+async function submitPraise(){
+  const tech=document.getElementById('m-tech').value;
+  const cust=document.getElementById('m-cust').value.trim()||'Anonymous';
+  const text=document.getElementById('m-text').value.trim();
+  if(!text)return;
+  try{
+    await fetch(ADD_PRAISE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tech,customer:cust,stars:starVal,text})});
+  }catch(e){console.warn('Praise save failed:',e.message);}
+  PRAISE.unshift({tech,customer:cust,stars:starVal,text,date:'Today'});
+  closeModal();renderPraise();
+  document.getElementById('m-cust').value='';
+  document.getElementById('m-text').value='';
   setStar(5);
 }
 
 // ── LIVE DATA ─────────────────────────────────────────────────────────────────
-async function loadData() {
-  try {
+async function loadData(){
+  try{
     const res  = await fetch(API_URL);
-    if (!res.ok) throw new Error('API ' + res.status);
+    if(!res.ok) throw new Error('API '+res.status);
     const json = await res.json();
-    if (json.error) throw new Error(json.error);
-    DATA = json;
-    console.log('Data loaded:', json.month, '| Generated:', json.generatedAt);
-  } catch(e) {
-    console.warn('Live data load failed, using cached data:', e.message);
+    if(json.error) throw new Error(json.error);
+
+    if(json.month)    MONTHS[2]=json.month;
+    if(json.prevMonth)MONTHS[1]=json.prevMonth;
+    WORK_DAYS_DONE  = json.workDaysDone  || WORK_DAYS_DONE;
+    WORK_DAYS_MONTH = json.workDaysMonth || WORK_DAYS_MONTH;
+    REV_TARGET      = json.revenueTarget || REV_TARGET;
+
+    TECHS.forEach(t=>{
+      if(json.techs&&json.techs[t]){
+        const d=json.techs[t];
+        TD[t].appt[2] =d.appt||0; TD[t].jobs[2]=d.jobs||0;
+        TD[t].cost[2] =d.cost||0; TD[t].travel[2]=d.travel||0;
+      }
+      if(json.prevTechs&&json.prevTechs[t]){
+        const p=json.prevTechs[t];
+        if(p.appt) TD[t].appt[1]=p.appt;
+        if(p.jobs) TD[t].jobs[1]=p.jobs;
+        if(p.cost) TD[t].cost[1]=p.cost;
+      }
+    });
+
+    if(json.praise&&json.praise.length) PRAISE=json.praise;
+    console.log('Live data loaded:',json.month,'generated:',json.generatedAt);
+  }catch(e){
+    console.warn('Using fallback data:',e.message);
   }
   updateHeader();
   buildCharts();
@@ -536,15 +521,13 @@ async function loadData() {
 }
 
 // ── CLOCK ─────────────────────────────────────────────────────────────────────
-function tick() {
-  document.getElementById('live-time').textContent =
+function tick(){
+  document.getElementById('clock').textContent=
     new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
-setInterval(tick, 1000); tick();
-
-// Load immediately, then every 15 minutes
+setInterval(tick,1000);tick();
 loadData();
-setInterval(loadData, 15 * 60 * 1000);
+setInterval(loadData,60*60*1000); // refreshes every 60 minutes
 </script>
 </body>
 </html>
