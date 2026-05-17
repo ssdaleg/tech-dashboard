@@ -168,7 +168,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
     </div>
     <div class="panel">
       <div class="p-title">💰 Revenue Generated MTD</div>
-      <div class="p-sub">Revenue invoiced per technician this month vs previous month. Dashed line = each tech's share of team target.</div>
+      <div class="p-sub">Team revenue MTD vs monthly target — 3-month trend. Each bar = total team revenue. Dashed line = monthly target. Shows whether team hit, missed or is tracking to target.</div>
       <div class="chart-wrap"><canvas id="c4"></canvas></div>
     </div>
   </div>
@@ -233,6 +233,8 @@ let MONTHS          = ['Feb 2026','Mar 2026','Apr 2026'];
 let WORK_DAYS_DONE  = 14;
 let WORK_DAYS_MONTH = 20;
 let REV_TARGET      = 300000;
+// Historical targets per month — update from Targets sheet via API
+const MONTH_TARGETS = {'Feb 2026':280000,'Mar 2026':280000,'Apr 2026':300000,'May 2026':300000};
 
 // ── FALLBACK DATA — 3 months [0]=Feb [1]=Mar [2]=Apr ─────────────────────────
 let TD = {
@@ -306,7 +308,7 @@ function buildCharts() {
   const uOrder = sortedBy('util',2);
   const jOrder = sortedBy('jobs',2);
   const hOrder = sortedBy('avg',2);
-  const rOrder = sortedBy('cost',2);
+  // rOrder not needed - c4 now shows team totals not per-tech
 
   // ── C1: Billable Utilisation % ──
   if(charts.c1) charts.c1.destroy();
@@ -367,29 +369,94 @@ function buildCharts() {
     plugins:[{id:'tl2',afterDraw(c){dline(c,DAILY_TARGET,'rgba(245,166,35,0.6)',DAILY_TARGET+'h target')}}]
   });
 
-  // ── C4: Revenue MTD ──
-  // Daily target = monthly target ÷ working days (combined across all techs regardless of role)
+  // ── C4: Team Revenue 3-Month Trend ──
+  // Team total per month = sum of all display techs
+  const teamRevenue = MONTHS.map((m,mi) => TECHS.reduce((s,t)=>s+((TD[t].cost||[])[mi]||0),0));
+  const monthTargets = [
+    MONTH_TARGETS[MONTHS[0]] || REV_TARGET,
+    MONTH_TARGETS[MONTHS[1]] || REV_TARGET,
+    REV_TARGET
+  ];
+  const mtdExpected = REV_TARGET * (WORK_DAYS_DONE / (WORK_DAYS_MONTH||1));
+  const barColors = MONTHS.map((m,mi) => {
+    if(mi===2){
+      const pace = mtdExpected>0 ? teamRevenue[mi]/mtdExpected*100 : 0;
+      return pace>=100?'rgba(0,200,83,0.85)':pace>=85?'rgba(255,179,0,0.85)':'rgba(229,57,53,0.85)';
+    }
+    const pct = monthTargets[mi]>0 ? teamRevenue[mi]/monthTargets[mi]*100 : 0;
+    return pct>=100?'rgba(0,200,83,0.85)':pct>=85?'rgba(255,179,0,0.85)':'rgba(229,57,53,0.85)';
+  });
   if(charts.c4) charts.c4.destroy();
   charts.c4 = new Chart(document.getElementById('c4'),{
     type:'bar',
     data:{
-      labels:rOrder,
-      datasets:MONTHS.map((m,mi)=>({
-        label:m,
-        data:rOrder.map(t=>(TD[t].cost||[])[mi]||0),
-        backgroundColor:mi===2?rOrder.map(t=>COLOR(t)):MC[mi],
-        borderRadius:mi===2?4:2,borderSkipped:false
-      }))
+      labels: MONTHS.map((m,mi)=>mi===2?m+' (MTD)':m),
+      datasets:[{
+        label:'Team Revenue',
+        data: teamRevenue,
+        backgroundColor: barColors,
+        borderRadius:6,
+        borderSkipped:false,
+        barThickness:38,
+      }]
     },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${fmtR(ctx.raw)}`}}},
-      scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>'R'+Math.round(v/1000)+'k'},grid:GRID,
-        title:{display:true,text:'Revenue (R)',color:'#607D8B',font:{size:9}}}}},
-    plugins:[{id:'tl3',afterDraw(c){
-      const dailyTarget = REV_TARGET / (WORK_DAYS_MONTH||1);
-      const expectedMTD = dailyTarget * WORK_DAYS_DONE;
-      dline(c, expectedMTD, 'rgba(245,166,35,0.75)', 'MTD Expected: '+fmtR(expectedMTD));
-    }}]
+    options:{
+      indexAxis:'y',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{...TIP,callbacks:{
+          label:ctx=>{
+            const mi=ctx.dataIndex;
+            const rev=teamRevenue[mi];
+            const tgt=monthTargets[mi];
+            const pct=tgt>0?Math.round(rev/tgt*100):0;
+            if(mi===2){
+              const pace=mtdExpected>0?Math.round(rev/mtdExpected*100):0;
+              return [' Team: '+fmtR(rev),' Target: '+fmtR(tgt),' MTD Pace: '+pace+'%'];
+            }
+            return [' Team: '+fmtR(rev),' Target: '+fmtR(tgt),' Attainment: '+pct+'%'];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:{...TY,callback:v=>'R'+Math.round(v/1000)+'k'},grid:GRID,
+           title:{display:true,text:'Team Revenue (R)',color:'#607D8B',font:{size:9}}},
+        y:{ticks:{color:'#607D8B',font:{size:11,weight:'600'}},grid:GRID}
+      }
+    },
+    plugins:[{
+      id:'revTargetLines',
+      afterDraw(chart){
+        const {ctx,chartArea,scales:{x,y}} = chart;
+        MONTHS.forEach((m,mi)=>{
+          const tgt  = monthTargets[mi];
+          const xPx  = x.getPixelForValue(tgt);
+          if(xPx<chartArea.left||xPx>chartArea.right) return;
+          ctx.save();
+          ctx.strokeStyle='rgba(245,166,35,0.85)';ctx.lineWidth=2;ctx.setLineDash([4,3]);
+          ctx.beginPath();ctx.moveTo(xPx,chartArea.top);ctx.lineTo(xPx,chartArea.bottom);ctx.stroke();
+          ctx.setLineDash([]);
+          if(mi===0){
+            ctx.fillStyle='rgba(245,166,35,0.85)';ctx.font='600 9px sans-serif';
+            ctx.fillText('Target '+fmtR(tgt),xPx+3,chartArea.top+10);
+          }
+          ctx.restore();
+          if(mi===2){
+            const xMTD=x.getPixelForValue(mtdExpected);
+            if(xMTD>=chartArea.left&&xMTD<=chartArea.right){
+              ctx.save();
+              ctx.strokeStyle='rgba(0,172,193,0.8)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
+              ctx.beginPath();ctx.moveTo(xMTD,chartArea.top);ctx.lineTo(xMTD,chartArea.bottom);ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.fillStyle='rgba(0,172,193,0.8)';ctx.font='600 9px sans-serif';
+              ctx.fillText('Pace '+fmtR(mtdExpected),xMTD+3,chartArea.top+22);
+              ctx.restore();
+            }
+          }
+        });
+      }
+    }]
   });
 }
 
@@ -535,6 +602,9 @@ async function loadData(){
     WORK_DAYS_DONE  = json.workDaysDone  || WORK_DAYS_DONE;
     WORK_DAYS_MONTH = json.workDaysMonth || WORK_DAYS_MONTH;
     REV_TARGET      = json.revenueTarget || REV_TARGET;
+    if(json.monthTargets){
+      Object.assign(MONTH_TARGETS, json.monthTargets);
+    }
 
     TECHS.forEach(t=>{
       if(json.techs&&json.techs[t]){
