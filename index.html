@@ -128,7 +128,10 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   </div>
   <div class="rev-strip">
     <div class="rev-top">
-      <span id="rev-heading">Team Revenue MTD vs Monthly Target</span>
+      <span style="display:flex;align-items:center;gap:8px">
+        <span id="perf-icon" style="font-size:22px;line-height:1;flex-shrink:0"></span>
+        <span id="rev-heading">Team Revenue MTD vs Monthly Target</span>
+      </span>
       <strong id="rev-label">Loading...</strong>
     </div>
     <div class="rev-track"><div class="rev-fill" id="rev-fill"></div></div>
@@ -365,8 +368,7 @@ function buildCharts() {
   });
 
   // ── C4: Revenue MTD ──
-  const activeTechs = TECHS.filter(t=>(TD[t].cost[2]||0)>0).length||1;
-  const share       = REV_TARGET/activeTechs;
+  // Daily target = monthly target ÷ working days (combined across all techs regardless of role)
   if(charts.c4) charts.c4.destroy();
   charts.c4 = new Chart(document.getElementById('c4'),{
     type:'bar',
@@ -383,7 +385,11 @@ function buildCharts() {
       plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${fmtR(ctx.raw)}`}}},
       scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>'R'+Math.round(v/1000)+'k'},grid:GRID,
         title:{display:true,text:'Revenue (R)',color:'#607D8B',font:{size:9}}}}},
-    plugins:[{id:'tl3',afterDraw(c){dline(c,share,'rgba(245,166,35,0.6)','Share: '+fmtR(share))}}]
+    plugins:[{id:'tl3',afterDraw(c){
+      const dailyTarget = REV_TARGET / (WORK_DAYS_MONTH||1);
+      const expectedMTD = dailyTarget * WORK_DAYS_DONE;
+      dline(c, expectedMTD, 'rgba(245,166,35,0.75)', 'MTD Expected: '+fmtR(expectedMTD));
+    }}]
   });
 }
 
@@ -412,6 +418,16 @@ function updateHeader() {
     headingColor = '#E53935';
   }
 
+  // Bold performance icon based on pace
+  let icon;
+  if (pacePct >= 110) {
+    icon = '🟢▲';
+  } else if (pacePct >= 90) {
+    icon = '🟡→';
+  } else {
+    icon = '🔴▼';
+  }
+  document.getElementById('perf-icon').textContent = icon;
   document.getElementById('rev-heading').textContent = heading;
   document.getElementById('rev-heading').style.color = headingColor;
   document.getElementById('rev-fill').style.width    = fullPct.toFixed(1)+'%';
