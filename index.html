@@ -128,7 +128,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   </div>
   <div class="rev-strip">
     <div class="rev-top">
-      <span>Team Revenue MTD vs Monthly Target</span>
+      <span id="rev-heading">Team Revenue MTD vs Monthly Target</span>
       <strong id="rev-label">Loading...</strong>
     </div>
     <div class="rev-track"><div class="rev-fill" id="rev-fill"></div></div>
@@ -389,11 +389,34 @@ function buildCharts() {
 
 // ── HEADER ────────────────────────────────────────────────────────────────────
 function updateHeader() {
-  const total = TECHS.reduce((s,t)=>s+((TD[t].cost||[])[2]||0),0);
-  const pct   = Math.min(total/(REV_TARGET||1)*100,100);
-  document.getElementById('rev-fill').style.width = pct.toFixed(1)+'%';
-  document.getElementById('rev-label').textContent = fmtR(total)+' / '+fmtR(REV_TARGET)+' ('+Math.round(pct)+'%)';
-  document.getElementById('mtd-badge').textContent = 'MTD Day '+WORK_DAYS_DONE+' of '+WORK_DAYS_MONTH+' · Target '+(WORK_DAYS_DONE*DAILY_TARGET)+'h/tech';
+  const total    = TECHS.reduce((s,t)=>s+((TD[t].cost||[])[2]||0),0);
+  const fullPct  = Math.min(total/(REV_TARGET||1)*100,100);
+
+  // Pace % = actual revenue vs where we SHOULD be at this point in the month
+  const expectedNow = (REV_TARGET||1) * (WORK_DAYS_DONE / (WORK_DAYS_MONTH||1));
+  const pacePct     = expectedNow > 0 ? Math.round(total / expectedNow * 100) : 0;
+
+  // Dynamic heading based on pace
+  let heading, headingColor;
+  if (pacePct >= 110) {
+    heading = '🚀 Smashing It! — Team is ahead of pace, keep pushing!';
+    headingColor = '#00C853';
+  } else if (pacePct >= 90) {
+    heading = '🎯 On Target — Looking good, finish strong!';
+    headingColor = '#00ACC1';
+  } else if (pacePct >= 70) {
+    heading = '⚡ Time to Push — Gap to close, every rand counts!';
+    headingColor = '#FFB300';
+  } else {
+    heading = '🔥 Hunt Mode — Let's go team, target needs catching!';
+    headingColor = '#E53935';
+  }
+
+  document.getElementById('rev-heading').textContent = heading;
+  document.getElementById('rev-heading').style.color = headingColor;
+  document.getElementById('rev-fill').style.width    = fullPct.toFixed(1)+'%';
+  document.getElementById('rev-label').textContent   = fmtR(total)+' / '+fmtR(REV_TARGET)+' ('+Math.round(fullPct)+'% of target · pace '+pacePct+'%)';
+  document.getElementById('mtd-badge').textContent   = 'MTD Day '+WORK_DAYS_DONE+' of '+WORK_DAYS_MONTH+' · Target '+(WORK_DAYS_DONE*DAILY_TARGET)+'h/tech';
   document.getElementById('month-badge').textContent = MONTHS[2];
 }
 
