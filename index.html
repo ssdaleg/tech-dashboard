@@ -408,7 +408,7 @@ function updateHeader() {
     heading = '⚡ Time to Push — Gap to close, every rand counts!';
     headingColor = '#FFB300';
   } else {
-    heading = '🔥 Hunt Mode — Let's go team, target needs catching!';
+    heading = "🔥 Hunt Mode — Let's go team, target needs catching!";
     headingColor = '#E53935';
   }
 
@@ -505,7 +505,11 @@ async function submitPraise(){
 // ── LIVE DATA ─────────────────────────────────────────────────────────────────
 async function loadData(){
   try{
-    const res  = await fetch(API_URL);
+    const controller = new AbortController();
+    const timeout    = setTimeout(()=>controller.abort(), 10000); // 10s timeout
+    const res        = await fetch(API_URL, {signal: controller.signal});
+    clearTimeout(timeout);
+
     if(!res.ok) throw new Error('API '+res.status);
     const json = await res.json();
     if(json.error) throw new Error(json.error);
@@ -533,8 +537,9 @@ async function loadData(){
     if(json.praise&&json.praise.length) PRAISE=json.praise;
     console.log('Live data loaded:',json.month,'generated:',json.generatedAt);
   }catch(e){
-    console.warn('Using fallback data:',e.message);
+    console.warn('Live data unavailable, showing last known data:',e.message);
   }
+  // Always re-render whether live data loaded or not
   updateHeader();
   buildCharts();
   buildPills();
@@ -547,8 +552,15 @@ function tick(){
     new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 setInterval(tick,1000);tick();
+// Render immediately with fallback data so charts never show blank
+updateHeader();
+buildCharts();
+buildPills();
+renderPraise();
+
+// Then fetch live data and re-render
 loadData();
-setInterval(loadData,60*60*1000); // refreshes every 60 minutes
+setInterval(loadData, 60*60*1000); // refresh every 60 minutes // refreshes every 60 minutes
 </script>
 </body>
 </html>
