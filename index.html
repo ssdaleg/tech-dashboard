@@ -213,9 +213,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 const API_URL        = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/dashboard-data';
 const ADD_PRAISE_URL = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/add-praise';
 
-const TECHS    = ['Aristo','Ashley','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
-const INITIALS = {Aristo:'AR',Ashley:'AS',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Richard:'RI',Riedhor:'RH'};
-const COLORS   = ['#4F46E5','#0891B2','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#9333EA','#00ACC1'];
+const TECHS    = ['Ashley','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
+const INITIALS = {Ashley:'AS',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Richard:'RI',Riedhor:'RH'};
+const COLORS   = ['#0891B2','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#9333EA','#00ACC1'];
 const COLOR    = t => COLORS[TECHS.indexOf(t)] || '#607D8B';
 
 const PRAISE_PEOPLE = [
@@ -233,7 +233,6 @@ let REV_TARGET      = 300000;
 
 // ── FALLBACK DATA — 3 months [0]=Feb [1]=Mar [2]=Apr ─────────────────────────
 let TD = {
-  Aristo:  {appt:[0,0,5],        jobs:[3,7,5],      cost:[0,0,1035],     travel:[0,0,0.3]},
   Ashley:  {appt:[57.4,140.2,93.26], jobs:[40,84,79],   cost:[16452,46821,32767],travel:[22.16,43.8,97.45]},
   David:   {appt:[0,98.1,92.37], jobs:[0,70,68],    cost:[0,31237,29600],travel:[0,92.1,368.18]},
   Jarryd:  {appt:[24.38,43,61.57],jobs:[45,61,50],  cost:[10700,8836,12357],travel:[45.17,50.35,33]},
