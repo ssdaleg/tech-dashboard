@@ -213,9 +213,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 const API_URL        = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/dashboard-data';
 const ADD_PRAISE_URL = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/add-praise';
 
-const TECHS    = ['Ashley','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor'];
-const INITIALS = {Ashley:'AS',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Richard:'RI',Riedhor:'RH'};
-const COLORS   = ['#0891B2','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#9333EA','#00ACC1'];
+const TECHS    = ['Ashley','David','Jarryd','Mondre','Naeem','Raees','Riedhor'];
+const INITIALS = {Ashley:'AS',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Riedhor:'RH'};
+const COLORS   = ['#0891B2','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#00ACC1'];
 const COLOR    = t => COLORS[TECHS.indexOf(t)] || '#607D8B';
 
 const PRAISE_PEOPLE = [
@@ -239,7 +239,6 @@ let TD = {
   Mondre:  {appt:[83,94.24,82.45],jobs:[98,160,152], cost:[12860,40830,28617],travel:[2.45,7.4,2]},
   Naeem:   {appt:[85.32,115.34,105.43],jobs:[66,78,64],cost:[41519,43227,39482],travel:[31.14,44.4,36.2]},
   Raees:   {appt:[120.5,136.55,100.25],jobs:[127,136,115],cost:[13650,37922,21990],travel:[0,2.19,1.1]},
-  Richard: {appt:[99.56,84.29,0],  jobs:[50,61,0],  cost:[17028,22116,0],  travel:[31.5,33.14,0]},
   Riedhor: {appt:[99.56,108,103.55],jobs:[84,112,130],cost:[17581,27103,40860],travel:[31.5,23.59,20.25]},
 };
 
