@@ -162,8 +162,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   <!-- RIGHT COLUMN: Avg Hrs/Day + Revenue -->
   <div class="col">
     <div class="panel">
-      <div class="p-title">📋 Avg Hours Logged / Day</div>
-      <div class="p-sub">Total appt hrs ÷ working days elapsed. Daily productivity per tech. Gold line = 6.5h target.</div>
+      <div class="p-title">📋 Hours by Category — Current Month</div>
+      <div class="p-sub">Hours logged per technician this month broken down by category — <span style="color:#00ACC1;font-weight:600">Billable</span> · <span style="color:#00C853;font-weight:600">SLA/Maint</span> · <span style="color:#F5A623;font-weight:600">SS Time</span> · <span style="color:#E53935;font-weight:600">No Charge</span>. Values shown in each segment.</div>
       <div class="chart-wrap"><canvas id="c3"></canvas></div>
     </div>
     <div class="panel">
@@ -245,13 +245,14 @@ let ADHOC3 = [0, 0, 0];
 
 // ── FALLBACK DATA — 3 months [0]=Feb [1]=Mar [2]=Apr ─────────────────────────
 let TD = {
-  Ashley:  {appt:[140.2,93.26,0], jobs:[84,79,0],   cost:[46821,32767,0],travel:[43.8,97.45,0]},
-  David:   {appt:[98.1,92.37,0], jobs:[70,68,0],    cost:[31237,29600,0],travel:[92.1,368.18,0]},
-  Jarryd:  {appt:[43,61.57,0],jobs:[61,50,0],  cost:[8836,12357,0],travel:[50.35,33,0]},
-  Mondre:  {appt:[94.24,82.45,0],jobs:[160,152,0], cost:[40830,28617,0],travel:[7.4,2,0]},
-  Naeem:   {appt:[115.34,105.43,0],jobs:[78,64,0],cost:[43227,39482,0],travel:[44.4,36.2,0]},
-  Raees:   {appt:[136.55,100.25,0],jobs:[136,115,0],cost:[37922,21990,0],travel:[2.19,1.1,0]},
-  Riedhor: {appt:[108,103.55,0],jobs:[112,130,0],cost:[27103,40860,0],travel:[23.59,20.25,0]},
+  // [Mar, Apr, May]  appt=total appt hrs, billable=LAB02+09+12, slaHrs=LAB05, ssTime=LAB08, noCharge=LAB03
+  Ashley:  {appt:[140.2,93.26,0],  jobs:[84,79,0],  cost:[46821,32767,0], travel:[43.8,97.45,0],  billable:[102.75,73.15,0], slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[2.5,1.5,0]},
+  David:   {appt:[98.1,92.37,0],   jobs:[70,68,0],  cost:[31237,29600,0], travel:[92.1,368.18,0], billable:[63.45,61,0],     slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
+  Jarryd:  {appt:[43,61.57,0],     jobs:[61,50,0],  cost:[8836,12357,0],  travel:[50.35,33,0],    billable:[38.4,35,0],      slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
+  Mondre:  {appt:[94.24,82.45,0],  jobs:[160,152,0],cost:[40830,28617,0], travel:[7.4,2,0],       billable:[75.5,64,0],      slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[1,0.5,0]},
+  Naeem:   {appt:[115.34,105.43,0],jobs:[78,64,0],  cost:[43227,39482,0], travel:[44.4,36.2,0],   billable:[105.5,93.3,0],   slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
+  Raees:   {appt:[136.55,100.25,0],jobs:[136,115,0],cost:[37922,21990,0], travel:[2.19,1.1,0],    billable:[78.35,59.5,0],   slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
+  Riedhor: {appt:[108,103.55,0],   jobs:[112,130,0],cost:[27103,40860,0], travel:[23.59,20.25,0], billable:[60.75,90.25,0],  slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
 };
 
 let PRAISE = [
@@ -314,7 +315,6 @@ function dline(chart, val, color, label) {
 function buildCharts() {
   const uOrder = sortedBy('util',2);
   const jOrder = sortedBy('jobs',2);
-  const hOrder = sortedBy('avg',2);
   // rOrder not needed - c4 now shows team totals not per-tech
 
   // ── C1: Billable Utilisation % ──
@@ -356,27 +356,86 @@ function buildCharts() {
         title:{display:true,text:'Jobs closed',color:'#607D8B',font:{size:9}}}}}
   });
 
-  // ── C3: Avg Hours Logged per Day ──
+  // ── C3: Hours by Category — stacked per tech (current month) ──
+  const hOrder  = sortedBy('appt', 2);
+  const CAT_COLORS = {
+    billable: 'rgba(0,172,193,0.85)',
+    slaHrs:   'rgba(0,200,83,0.85)',
+    ssTime:   'rgba(245,166,35,0.85)',
+    noCharge: 'rgba(229,57,53,0.75)',
+  };
+  const CAT_LABELS = {
+    billable: 'Billable (LAB02/09/12)',
+    slaHrs:   'SLA / Maintenance',
+    ssTime:   'SS Time',
+    noCharge: 'No Charge',
+  };
   if(charts.c3) charts.c3.destroy();
   charts.c3 = new Chart(document.getElementById('c3'),{
     type:'bar',
     data:{
-      labels:hOrder,
-      datasets:MONTHS.map((m,mi)=>({
-        label:m,
-        data:hOrder.map(t=>avgHrs(t,mi)),
-        backgroundColor:mi===2?hOrder.map(t=>COLOR(t)):MC[mi],
-        borderRadius:mi===2?4:2,borderSkipped:false
+      labels: hOrder,
+      datasets: Object.keys(CAT_COLORS).map(cat=>({
+        label: CAT_LABELS[cat],
+        data:  hOrder.map(t => (TD[t][cat]||[])[2]||0),
+        backgroundColor: CAT_COLORS[cat],
+        borderRadius: 0,
+        borderSkipped: false,
+        stack: 'hrs',
       }))
     },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw}h avg/day`}}},
-      scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>v+'h'},grid:GRID,
-        title:{display:true,text:'Avg hrs/day',color:'#607D8B',font:{size:9}}}}},
-    plugins:[{id:'tl2',afterDraw(c){dline(c,DAILY_TARGET,'rgba(245,166,35,0.6)',DAILY_TARGET+'h target')}}]
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',labels:{color:'#607D8B',font:{size:9},boxWidth:10,padding:6}},
+        tooltip:{...TIP,callbacks:{
+          label: ctx => {
+            const v = ctx.raw;
+            if(!v) return null;
+            return ' ' + ctx.dataset.label + ': ' + v.toFixed(1) + 'h';
+          },
+          afterBody: ctx => {
+            const t   = hOrder[ctx[0].dataIndex];
+            const tot = ['billable','slaHrs','ssTime','noCharge'].reduce((s,k)=>s+((TD[t][k]||[])[2]||0),0);
+            const appt= (TD[t].appt||[])[2]||0;
+            return ['', 'Total LAB hrs: '+tot.toFixed(1)+'h', 'EWorks Appt: '+appt.toFixed(1)+'h'];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:TX, grid:GRID, stacked:true},
+        y:{ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
+           title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}}}
+      }
+    },
+    plugins:[{
+      id:'stackLabels',
+      afterDatasetsDraw(chart){
+        const {ctx} = chart;
+        chart.data.datasets.forEach((ds,di)=>{
+          const meta = chart.getDatasetMeta(di);
+          meta.data.forEach((bar,i)=>{
+            const val = ds.data[i];
+            if(!val || val < 1) return;
+            const cx  = bar.x;
+            const top = bar.y;
+            const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
+            const mid = top + (bot - top) / 2;
+            if(Math.abs(bot - top) < 12) return;
+            ctx.save();
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(val.toFixed(1), cx, mid);
+            ctx.restore();
+          });
+        });
+      }
+    }]
   });
 
-  // ── C4: Team Revenue 3-Month Trend — Stacked (Adhoc + SLA Recurring) ──
+    // ── C4: Team Revenue 3-Month Trend — Stacked (Adhoc + SLA Recurring) ──
   // Use API-provided adhoc totals if available, otherwise sum from TD
   const adhocByMonth  = MONTHS.map((m,mi) =>
     ADHOC3[mi] > 0 ? ADHOC3[mi] : TECHS.reduce((s,t)=>s+((TD[t].cost||[])[mi]||0),0)
@@ -657,10 +716,14 @@ async function loadData(){
     TECHS.forEach(t=>{
       apiMonths.forEach((tm,mi)=>{
         if(tm && tm[t]){
-          TD[t].appt[mi]   = tm[t].appt   || 0;
-          TD[t].jobs[mi]   = tm[t].jobs   || 0;
-          TD[t].cost[mi]   = tm[t].cost   || 0;
-          TD[t].travel[mi] = tm[t].travel || 0;
+          TD[t].appt[mi]     = tm[t].appt     || 0;
+          TD[t].jobs[mi]     = tm[t].jobs     || 0;
+          TD[t].cost[mi]     = tm[t].cost     || 0;
+          TD[t].travel[mi]   = tm[t].travel   || 0;
+          TD[t].billable[mi] = tm[t].billable || 0;
+          TD[t].slaHrs[mi]   = tm[t].slaHrs   || 0;
+          TD[t].ssTime[mi]   = tm[t].ssTime   || 0;
+          TD[t].noCharge[mi] = tm[t].noCharge || 0;
         }
       });
     });
