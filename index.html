@@ -149,12 +149,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   <div class="col">
     <div class="panel">
       <div class="p-title">⏱ Billable Utilisation %</div>
-      <div class="p-sub">Appt hrs worked ÷ available hrs (working days × 6.5h daily target). 3-month trend. Green line = 100% target. Sorted alphabetically.</div>
+      <div class="p-sub">Billable hrs (LAB02/09/12) as a % of <em>total hours logged</em> per tech. 3-month trend. Green line = 80% target. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c1"></canvas></div>
     </div>
     <div class="panel">
-      <div class="p-title">🔧 Jobs Completed</div>
-      <div class="p-sub">Jobs closed per technician. 3-month stacked trend — each segment = one month, value shown inside. Sorted alphabetically.</div>
+      <div class="p-title">📋 Labour Hours — 3 Month Trend</div>
+      <div class="p-sub">Hours logged per tech across all labour categories — 3 months side-by-side (lightest = oldest, brightest = current month). Values labelled on current month. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c2"></canvas></div>
     </div>
   </div>
@@ -316,153 +316,177 @@ function buildCharts() {
   // All charts use alphabetical order (TECHS array is already alphabetical)
   const alphaOrder = [...TECHS];
 
-  // ── C1: Billable Utilisation % ──
-  if(charts.c1) charts.c1.destroy();
-  charts.c1 = new Chart(document.getElementById('c1'),{
-    type:'bar',
-    data:{
-      labels:alphaOrder,
-      datasets:MONTHS.map((m,mi)=>({
-        label:m,
-        data:alphaOrder.map(t=>billPct(t,mi)),
-        backgroundColor:mi===2?alphaOrder.map(t=>{const p=billPct(t,2);return p>=100?'#00C853':p>=80?'#F5A623':p>=60?'#FFB300':'#E53935'}):MC[mi],
-        borderRadius:mi===2?4:2,borderSkipped:false
-      }))
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw}% billable`}}},
-      scales:{x:{ticks:TX,grid:GRID},y:{ticks:{...TY,callback:v=>v+'%'},grid:GRID,max:130,
-        title:{display:true,text:'% of available hrs',color:'#607D8B',font:{size:9}}}}},
-    plugins:[{id:'tl',afterDraw(c){dline(c,100,'rgba(0,200,83,0.6)','TARGET 100%')}}]
-  });
+  // Shared category config
+  const CAT_KEYS   = ['billable','slaHrs','ssTime','noCharge'];
+  const CAT_LABELS = {billable:'Billable (LAB02/09/12)',slaHrs:'SLA / Maintenance',ssTime:'SS Time',noCharge:'No Charge'};
+  // Per-month shades: [prev2, prev, current] — opacity increases toward current
+  const CAT_SHADES = {
+    billable: ['rgba(0,172,193,0.3)','rgba(0,172,193,0.55)','rgba(0,172,193,0.9)'],
+    slaHrs:   ['rgba(0,200,83,0.3)', 'rgba(0,200,83,0.55)', 'rgba(0,200,83,0.9)'],
+    ssTime:   ['rgba(245,166,35,0.3)','rgba(245,166,35,0.55)','rgba(245,166,35,0.9)'],
+    noCharge: ['rgba(229,57,53,0.3)', 'rgba(229,57,53,0.55)', 'rgba(229,57,53,0.85)'],
+  };
 
-  // ── C2: Jobs Completed — stacked by month with value labels ──
-  const JOB_COLORS = [MC[0], MC[1], alphaOrder.map(t=>COLOR(t))];
-  if(charts.c2) charts.c2.destroy();
-  charts.c2 = new Chart(document.getElementById('c2'),{
-    type:'bar',
-    data:{
-      labels:alphaOrder,
-      datasets:MONTHS.map((m,mi)=>({
-        label:m,
-        data:alphaOrder.map(t=>(TD[t].jobs||[])[mi]||0),
-        backgroundColor:mi===2?alphaOrder.map(t=>COLOR(t)):MC[mi],
-        borderRadius:mi===2?4:2,
-        borderSkipped:false,
-        stack:'jobs',
-      }))
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:LEG,
-        tooltip:{...TIP,callbacks:{
-          label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} jobs`,
-          afterBody:ctx=>{
-            const t=alphaOrder[ctx[0].dataIndex];
-            const tot=MONTHS.reduce((s,m,mi)=>s+((TD[t].jobs||[])[mi]||0),0);
-            return ['','3-month total: '+tot+' jobs'];
-          }
-        }}
-      },
-      scales:{
-        x:{ticks:TX,grid:GRID,stacked:true},
-        y:{ticks:TY,grid:GRID,stacked:true,
-          title:{display:true,text:'Jobs closed',color:'#607D8B',font:{size:9}}}
-      }
-    },
-    plugins:[{
-      id:'jobStackLabels',
-      afterDatasetsDraw(chart){
-        const {ctx}=chart;
-        chart.data.datasets.forEach((ds,di)=>{
-          const meta=chart.getDatasetMeta(di);
-          meta.data.forEach((bar,i)=>{
-            const val=ds.data[i];
-            if(!val||val<1) return;
-            const cx=bar.x;
-            const top=bar.y;
-            const bot=bar.base!==undefined?bar.base:bar.y+bar.height;
-            const mid=top+(bot-top)/2;
-            if(Math.abs(bot-top)<12) return;
+  // Total logged hours (all LAB categories) for a tech in a given month index
+  function totalLogged(tech, mi) {
+    return CAT_KEYS.reduce((s,k) => s + ((TD[tech][k]||[])[mi]||0), 0);
+  }
+
+  // Billable % of total logged hours (not vs. available hrs)
+  function billablePctLogged(tech, mi) {
+    const b   = (TD[tech].billable||[])[mi]||0;
+    const tot = totalLogged(tech, mi);
+    return tot > 0 ? Math.round(b / tot * 100) : 0;
+  }
+
+  // Reusable segment-label plugin factory
+  function segLabelPlugin(id) {
+    return {
+      id,
+      afterDatasetsDraw(chart) {
+        const {ctx} = chart;
+        chart.data.datasets.forEach((ds, di) => {
+          const meta = chart.getDatasetMeta(di);
+          meta.data.forEach((bar, i) => {
+            const val = ds.data[i];
+            if (!val || val < 1) return;
+            const cx  = bar.x;
+            const top = bar.y;
+            const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
+            const mid = top + (bot - top) / 2;
+            if (Math.abs(bot - top) < 12) return;
             ctx.save();
-            ctx.fillStyle='#fff';
-            ctx.font='bold 9px sans-serif';
-            ctx.textAlign='center';
-            ctx.textBaseline='middle';
-            ctx.fillText(val, cx, mid);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(val.toFixed ? val.toFixed(1) : val, cx, mid);
             ctx.restore();
           });
         });
       }
-    }]
-  });
+    };
+  }
 
-  // ── C3: Hours by Category — stacked per tech (current month) ──
-  const hOrder  = alphaOrder;
-  const CAT_COLORS = {
-    billable: 'rgba(0,172,193,0.85)',
-    slaHrs:   'rgba(0,200,83,0.85)',
-    ssTime:   'rgba(245,166,35,0.85)',
-    noCharge: 'rgba(229,57,53,0.75)',
-  };
-  const CAT_LABELS = {
-    billable: 'Billable (LAB02/09/12)',
-    slaHrs:   'SLA / Maintenance',
-    ssTime:   'SS Time',
-    noCharge: 'No Charge',
-  };
-  if(charts.c3) charts.c3.destroy();
-  charts.c3 = new Chart(document.getElementById('c3'),{
+  // ── C1: Billable Utilisation % — of total logged hours ──
+  if(charts.c1) charts.c1.destroy();
+  charts.c1 = new Chart(document.getElementById('c1'),{
     type:'bar',
     data:{
-      labels: hOrder,
-      datasets: Object.keys(CAT_COLORS).map(cat=>({
-        label: CAT_LABELS[cat],
-        data:  hOrder.map(t => (TD[t][cat]||[])[2]||0),
-        backgroundColor: CAT_COLORS[cat],
-        borderRadius: 0,
+      labels: alphaOrder,
+      datasets: MONTHS.map((m, mi) => ({
+        label: m,
+        data: alphaOrder.map(t => billablePctLogged(t, mi)),
+        backgroundColor: mi===2
+          ? alphaOrder.map(t => {
+              const p = billablePctLogged(t, 2);
+              return p>=80?'#00C853':p>=60?'#F5A623':p>=40?'#FFB300':'#E53935';
+            })
+          : MC[mi],
+        borderRadius: mi===2?4:2,
         borderSkipped: false,
-        stack: 'hrs',
       }))
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{
-        legend:{display:true,position:'top',labels:{color:'#607D8B',font:{size:9},boxWidth:10,padding:6}},
-        tooltip:{...TIP,callbacks:{
+        legend: LEG,
+        tooltip:{...TIP, callbacks:{
           label: ctx => {
-            const v = ctx.raw;
-            if(!v) return null;
-            return ' ' + ctx.dataset.label + ': ' + v.toFixed(1) + 'h';
+            const t   = alphaOrder[ctx.dataIndex];
+            const mi  = ctx.datasetIndex;
+            const b   = (TD[t].billable||[])[mi]||0;
+            const tot = totalLogged(t, mi);
+            return ` ${ctx.raw}% billable  (${b.toFixed(1)}h of ${tot.toFixed(1)}h logged)`;
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:TX, grid:GRID},
+        y:{ticks:{...TY,callback:v=>v+'%'}, grid:GRID, max:110,
+          title:{display:true,text:'Billable % of logged hrs',color:'#607D8B',font:{size:9}}}
+      }
+    },
+    plugins:[{id:'tl',afterDraw(c){dline(c,80,'rgba(0,200,83,0.6)','80% TARGET')}}]
+  });
+
+  // ── C2: Labour Hours — 3-Month Trend (grouped stacked by category) ──
+  // 12 datasets: for each month (0,1,2) × each category (4)
+  // Bars in different stack groups sit side-by-side; bars within a stack are stacked
+  const c2Datasets = [];
+  MONTHS.forEach((m, mi) => {
+    CAT_KEYS.forEach((cat, ci) => {
+      // Legend: only show labels for current month (mi===2); use zero-width spaces to dedupe other months
+      const legendLabel = mi===2 ? CAT_LABELS[cat] : '\u200b'.repeat(mi * CAT_KEYS.length + ci + 1);
+      c2Datasets.push({
+        label: legendLabel,
+        data: alphaOrder.map(t => (TD[t][cat]||[])[mi]||0),
+        backgroundColor: CAT_SHADES[cat][mi],
+        borderRadius: (mi===2 && ci===CAT_KEYS.length-1) ? 4 : 0,
+        borderSkipped: false,
+        stack: 'month'+mi,
+      });
+    });
+  });
+
+  if(charts.c2) charts.c2.destroy();
+  charts.c2 = new Chart(document.getElementById('c2'),{
+    type:'bar',
+    data:{ labels: alphaOrder, datasets: c2Datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{
+          display:true, position:'top',
+          labels:{
+            color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
+            filter: item => !item.text.startsWith('\u200b')
+          }
+        },
+        tooltip:{...TIP, callbacks:{
+          title: ctx => {
+            const t  = alphaOrder[ctx[0].dataIndex];
+            const mi = Math.floor(ctx[0].datasetIndex / CAT_KEYS.length);
+            return t + ' — ' + MONTHS[mi];
+          },
+          label: ctx => {
+            const v  = ctx.raw;
+            if (!v) return null;
+            const ci = ctx.datasetIndex % CAT_KEYS.length;
+            return ' ' + CAT_LABELS[CAT_KEYS[ci]] + ': ' + v.toFixed(1) + 'h';
           },
           afterBody: ctx => {
-            const t   = hOrder[ctx[0].dataIndex];
-            const tot = ['billable','slaHrs','ssTime','noCharge'].reduce((s,k)=>s+((TD[t][k]||[])[2]||0),0);
-            const appt= (TD[t].appt||[])[2]||0;
-            return ['', 'Total LAB hrs: '+tot.toFixed(1)+'h', 'EWorks Appt: '+appt.toFixed(1)+'h'];
+            const t  = alphaOrder[ctx[0].dataIndex];
+            const mi = Math.floor(ctx[0].datasetIndex / CAT_KEYS.length);
+            const tot = totalLogged(t, mi);
+            const appt = (TD[t].appt||[])[mi]||0;
+            return ['', 'Total logged: '+tot.toFixed(1)+'h', 'EWorks Appt: '+appt.toFixed(1)+'h'];
           }
         }}
       },
       scales:{
         x:{ticks:TX, grid:GRID, stacked:true},
         y:{ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
-           title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}}}
+          title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}}}
       }
     },
     plugins:[{
-      id:'stackLabels',
-      afterDatasetsDraw(chart){
+      id:'c2SegLabels',
+      afterDatasetsDraw(chart) {
+        // Only label the current-month stacks (dataset indices 8–11)
         const {ctx} = chart;
-        chart.data.datasets.forEach((ds,di)=>{
-          const meta = chart.getDatasetMeta(di);
-          meta.data.forEach((bar,i)=>{
+        const miStart = 2 * CAT_KEYS.length; // index where current-month datasets begin
+        CAT_KEYS.forEach((cat, ci) => {
+          const ds   = chart.data.datasets[miStart + ci];
+          const meta = chart.getDatasetMeta(miStart + ci);
+          meta.data.forEach((bar, i) => {
             const val = ds.data[i];
-            if(!val || val < 1) return;
+            if (!val || val < 1) return;
             const cx  = bar.x;
             const top = bar.y;
             const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
             const mid = top + (bot - top) / 2;
-            if(Math.abs(bot - top) < 12) return;
+            if (Math.abs(bot - top) < 12) return;
             ctx.save();
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 9px sans-serif';
@@ -474,6 +498,59 @@ function buildCharts() {
         });
       }
     }]
+  });
+
+  // ── C3: Hours by Category — current month (or latest month with data) ──
+  // Find latest month index that has any category data; fall back to current month
+  const bestMi = [2,1,0].find(mi =>
+    TECHS.some(t => CAT_KEYS.some(k => ((TD[t][k]||[])[mi]||0) > 0))
+  ) ?? 2;
+  const bestMonthLabel = MONTHS[bestMi];
+  // Update subtitle dynamically to show which month is displayed
+  const c3SubEl = document.querySelector('#c3')?.closest('.panel')?.querySelector('.p-sub');
+  if (c3SubEl && bestMi !== 2) {
+    c3SubEl.innerHTML = `Showing <strong style="color:var(--gold)">${bestMonthLabel}</strong> (current month pending LAB data) — <span style="color:#00ACC1;font-weight:600">Billable</span> · <span style="color:#00C853;font-weight:600">SLA/Maint</span> · <span style="color:#F5A623;font-weight:600">SS Time</span> · <span style="color:#E53935;font-weight:600">No Charge</span>`;
+  }
+
+  if(charts.c3) charts.c3.destroy();
+  charts.c3 = new Chart(document.getElementById('c3'),{
+    type:'bar',
+    data:{
+      labels: alphaOrder,
+      datasets: CAT_KEYS.map(cat=>({
+        label: CAT_LABELS[cat],
+        data:  alphaOrder.map(t => (TD[t][cat]||[])[bestMi]||0),
+        backgroundColor: CAT_SHADES[cat][2], // always use current-month (full opacity) colours
+        borderRadius: 0,
+        borderSkipped: false,
+        stack: 'hrs',
+      }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true,position:'top',labels:{color:'#607D8B',font:{size:9},boxWidth:10,padding:6}},
+        tooltip:{...TIP, callbacks:{
+          label: ctx => {
+            const v = ctx.raw;
+            if (!v) return null;
+            return ' ' + ctx.dataset.label + ': ' + v.toFixed(1) + 'h';
+          },
+          afterBody: ctx => {
+            const t    = alphaOrder[ctx[0].dataIndex];
+            const tot  = totalLogged(t, bestMi);
+            const appt = (TD[t].appt||[])[bestMi]||0;
+            return ['', 'Total logged: '+tot.toFixed(1)+'h', 'EWorks Appt: '+appt.toFixed(1)+'h'];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:TX, grid:GRID, stacked:true},
+        y:{ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
+          title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}}}
+      }
+    },
+    plugins:[segLabelPlugin('stackLabels')]
   });
 
     // ── C4: Team Revenue 3-Month Trend — Stacked (Adhoc + SLA Recurring) ──
