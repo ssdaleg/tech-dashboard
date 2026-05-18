@@ -153,8 +153,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
       <div class="chart-wrap"><canvas id="c1"></canvas></div>
     </div>
     <div class="panel">
-      <div class="p-title">📋 Labour Hours — 3 Month Trend</div>
-      <div class="p-sub">Hours logged per tech across all labour categories — 3 months side-by-side (lightest = oldest, brightest = current month). Values labelled on current month. Sorted alphabetically.</div>
+      <div class="p-title">🔧 Jobs Completed</div>
+      <div class="p-sub">Jobs closed (teal) + total hours logged (gold) per tech — 3-month trend side-by-side, brightest = current month. Values labelled on current month bars. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c2"></canvas></div>
     </div>
   </div>
@@ -410,22 +410,29 @@ function buildCharts() {
     plugins:[{id:'tl',afterDraw(c){dline(c,80,'rgba(0,200,83,0.6)','80% TARGET')}}]
   });
 
-  // ── C2: Labour Hours — 3-Month Trend (grouped stacked by category) ──
-  // 12 datasets: for each month (0,1,2) × each category (4)
-  // Bars in different stack groups sit side-by-side; bars within a stack are stacked
+  // ── C2: Jobs Completed — 3-month grouped bars, each stacked: Jobs (bottom) + Hours logged (top) ──
+  // 6 datasets: 3 months × 2 metrics.  Each month is its own stack group so months sit side-by-side.
+  const JOB_TEAL  = ['rgba(0,172,193,0.28)','rgba(0,172,193,0.52)','rgba(0,172,193,0.9)'];
+  const HRS_GOLD  = ['rgba(245,166,35,0.22)','rgba(245,166,35,0.45)','rgba(245,166,35,0.82)'];
   const c2Datasets = [];
   MONTHS.forEach((m, mi) => {
-    CAT_KEYS.forEach((cat, ci) => {
-      // Legend: only show labels for current month (mi===2); use zero-width spaces to dedupe other months
-      const legendLabel = mi===2 ? CAT_LABELS[cat] : '\u200b'.repeat(mi * CAT_KEYS.length + ci + 1);
-      c2Datasets.push({
-        label: legendLabel,
-        data: alphaOrder.map(t => (TD[t][cat]||[])[mi]||0),
-        backgroundColor: CAT_SHADES[cat][mi],
-        borderRadius: (mi===2 && ci===CAT_KEYS.length-1) ? 4 : 0,
-        borderSkipped: false,
-        stack: 'month'+mi,
-      });
+    // Bottom segment — Jobs count
+    c2Datasets.push({
+      label: mi===2 ? 'Jobs completed' : '\u200b'.repeat(mi+1),
+      data:  alphaOrder.map(t => (TD[t].jobs||[])[mi]||0),
+      backgroundColor: JOB_TEAL[mi],
+      borderRadius: 0,
+      borderSkipped: false,
+      stack: 'month'+mi,
+    });
+    // Top segment — Total hours logged
+    c2Datasets.push({
+      label: mi===2 ? 'Total hrs logged' : '\u200b\u200b'.repeat(mi+1),
+      data:  alphaOrder.map(t => totalLogged(t, mi)),
+      backgroundColor: HRS_GOLD[mi],
+      borderRadius: mi===2 ? 4 : 2,
+      borderSkipped: false,
+      stack: 'month'+mi,
     });
   });
 
@@ -446,42 +453,43 @@ function buildCharts() {
         tooltip:{...TIP, callbacks:{
           title: ctx => {
             const t  = alphaOrder[ctx[0].dataIndex];
-            const mi = Math.floor(ctx[0].datasetIndex / CAT_KEYS.length);
+            const mi = Math.floor(ctx[0].datasetIndex / 2);
             return t + ' — ' + MONTHS[mi];
           },
           label: ctx => {
-            const v  = ctx.raw;
+            const v   = ctx.raw;
             if (!v) return null;
-            const ci = ctx.datasetIndex % CAT_KEYS.length;
-            return ' ' + CAT_LABELS[CAT_KEYS[ci]] + ': ' + v.toFixed(1) + 'h';
+            const isHrs = ctx.datasetIndex % 2 === 1;
+            return isHrs ? ` Hours logged: ${v.toFixed(1)}h` : ` Jobs completed: ${v}`;
           },
           afterBody: ctx => {
             const t  = alphaOrder[ctx[0].dataIndex];
-            const mi = Math.floor(ctx[0].datasetIndex / CAT_KEYS.length);
-            const tot = totalLogged(t, mi);
+            const mi = Math.floor(ctx[0].datasetIndex / 2);
+            const jobs = (TD[t].jobs||[])[mi]||0;
+            const hrs  = totalLogged(t, mi);
             const appt = (TD[t].appt||[])[mi]||0;
-            return ['', 'Total logged: '+tot.toFixed(1)+'h', 'EWorks Appt: '+appt.toFixed(1)+'h'];
+            return ['', `Jobs: ${jobs}  ·  Logged: ${hrs.toFixed(1)}h  ·  Appt: ${appt.toFixed(1)}h`];
           }
         }}
       },
       scales:{
         x:{ticks:TX, grid:GRID, stacked:true},
-        y:{ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
-          title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}}}
+        y:{ticks:TY, grid:GRID, stacked:true,
+          title:{display:true,text:'Jobs · Hours (combined scale)',color:'#607D8B',font:{size:9}}}
       }
     },
     plugins:[{
       id:'c2SegLabels',
       afterDatasetsDraw(chart) {
-        // Only label the current-month stacks (dataset indices 8–11)
+        // Label both segments on the current-month stacks only (datasets 4 & 5)
         const {ctx} = chart;
-        const miStart = 2 * CAT_KEYS.length; // index where current-month datasets begin
-        CAT_KEYS.forEach((cat, ci) => {
-          const ds   = chart.data.datasets[miStart + ci];
-          const meta = chart.getDatasetMeta(miStart + ci);
+        [4, 5].forEach(di => {
+          const ds   = chart.data.datasets[di];
+          const meta = chart.getDatasetMeta(di);
+          const isHrs = di % 2 === 1;
           meta.data.forEach((bar, i) => {
             const val = ds.data[i];
-            if (!val || val < 1) return;
+            if (!val || val < 2) return;
             const cx  = bar.x;
             const top = bar.y;
             const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
@@ -492,7 +500,7 @@ function buildCharts() {
             ctx.font = 'bold 9px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(val.toFixed(1), cx, mid);
+            ctx.fillText(isHrs ? val.toFixed(1)+'h' : val, cx, mid);
             ctx.restore();
           });
         });
