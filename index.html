@@ -149,12 +149,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   <div class="col">
     <div class="panel">
       <div class="p-title">⏱ Billable Utilisation %</div>
-      <div class="p-sub">Appt hrs worked ÷ available hrs (working days × 6.5h daily target). 3-month trend. Green line = 100% target.</div>
+      <div class="p-sub">Appt hrs worked ÷ available hrs (working days × 6.5h daily target). 3-month trend. Green line = 100% target. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c1"></canvas></div>
     </div>
     <div class="panel">
       <div class="p-title">🔧 Jobs Completed</div>
-      <div class="p-sub">Jobs closed per technician. 3-month trend — brighter bar = current month. Sorted by current month performance.</div>
+      <div class="p-sub">Jobs closed per technician. 3-month stacked trend — each segment = one month, value shown inside. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c2"></canvas></div>
     </div>
   </div>
@@ -163,7 +163,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   <div class="col">
     <div class="panel">
       <div class="p-title">📋 Hours by Category — Current Month</div>
-      <div class="p-sub">Hours logged per technician this month broken down by category — <span style="color:#00ACC1;font-weight:600">Billable</span> · <span style="color:#00C853;font-weight:600">SLA/Maint</span> · <span style="color:#F5A623;font-weight:600">SS Time</span> · <span style="color:#E53935;font-weight:600">No Charge</span>. Values shown in each segment.</div>
+      <div class="p-sub">Hours logged per technician this month broken down by category — <span style="color:#00ACC1;font-weight:600">Billable</span> · <span style="color:#00C853;font-weight:600">SLA/Maint</span> · <span style="color:#F5A623;font-weight:600">SS Time</span> · <span style="color:#E53935;font-weight:600">No Charge</span>. Values shown in each segment. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c3"></canvas></div>
     </div>
     <div class="panel">
@@ -313,20 +313,19 @@ function dline(chart, val, color, label) {
 }
 
 function buildCharts() {
-  const uOrder = sortedBy('util',2);
-  const jOrder = sortedBy('jobs',2);
-  // rOrder not needed - c4 now shows team totals not per-tech
+  // All charts use alphabetical order (TECHS array is already alphabetical)
+  const alphaOrder = [...TECHS];
 
   // ── C1: Billable Utilisation % ──
   if(charts.c1) charts.c1.destroy();
   charts.c1 = new Chart(document.getElementById('c1'),{
     type:'bar',
     data:{
-      labels:uOrder,
+      labels:alphaOrder,
       datasets:MONTHS.map((m,mi)=>({
         label:m,
-        data:uOrder.map(t=>billPct(t,mi)),
-        backgroundColor:mi===2?uOrder.map(t=>{const p=billPct(t,2);return p>=100?'#00C853':p>=80?'#F5A623':p>=60?'#FFB300':'#E53935'}):MC[mi],
+        data:alphaOrder.map(t=>billPct(t,mi)),
+        backgroundColor:mi===2?alphaOrder.map(t=>{const p=billPct(t,2);return p>=100?'#00C853':p>=80?'#F5A623':p>=60?'#FFB300':'#E53935'}):MC[mi],
         borderRadius:mi===2?4:2,borderSkipped:false
       }))
     },
@@ -337,27 +336,69 @@ function buildCharts() {
     plugins:[{id:'tl',afterDraw(c){dline(c,100,'rgba(0,200,83,0.6)','TARGET 100%')}}]
   });
 
-  // ── C2: Jobs Completed ──
+  // ── C2: Jobs Completed — stacked by month with value labels ──
+  const JOB_COLORS = [MC[0], MC[1], alphaOrder.map(t=>COLOR(t))];
   if(charts.c2) charts.c2.destroy();
   charts.c2 = new Chart(document.getElementById('c2'),{
     type:'bar',
     data:{
-      labels:jOrder,
+      labels:alphaOrder,
       datasets:MONTHS.map((m,mi)=>({
         label:m,
-        data:jOrder.map(t=>(TD[t].jobs||[])[mi]||0),
-        backgroundColor:mi===2?jOrder.map(t=>COLOR(t)):MC[mi],
-        borderRadius:mi===2?4:2,borderSkipped:false
+        data:alphaOrder.map(t=>(TD[t].jobs||[])[mi]||0),
+        backgroundColor:mi===2?alphaOrder.map(t=>COLOR(t)):MC[mi],
+        borderRadius:mi===2?4:2,
+        borderSkipped:false,
+        stack:'jobs',
       }))
     },
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:LEG,tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.raw} jobs`}}},
-      scales:{x:{ticks:TX,grid:GRID},y:{ticks:TY,grid:GRID,
-        title:{display:true,text:'Jobs closed',color:'#607D8B',font:{size:9}}}}}
+      plugins:{
+        legend:LEG,
+        tooltip:{...TIP,callbacks:{
+          label:ctx=>` ${ctx.dataset.label}: ${ctx.raw} jobs`,
+          afterBody:ctx=>{
+            const t=alphaOrder[ctx[0].dataIndex];
+            const tot=MONTHS.reduce((s,m,mi)=>s+((TD[t].jobs||[])[mi]||0),0);
+            return ['','3-month total: '+tot+' jobs'];
+          }
+        }}
+      },
+      scales:{
+        x:{ticks:TX,grid:GRID,stacked:true},
+        y:{ticks:TY,grid:GRID,stacked:true,
+          title:{display:true,text:'Jobs closed',color:'#607D8B',font:{size:9}}}
+      }
+    },
+    plugins:[{
+      id:'jobStackLabels',
+      afterDatasetsDraw(chart){
+        const {ctx}=chart;
+        chart.data.datasets.forEach((ds,di)=>{
+          const meta=chart.getDatasetMeta(di);
+          meta.data.forEach((bar,i)=>{
+            const val=ds.data[i];
+            if(!val||val<1) return;
+            const cx=bar.x;
+            const top=bar.y;
+            const bot=bar.base!==undefined?bar.base:bar.y+bar.height;
+            const mid=top+(bot-top)/2;
+            if(Math.abs(bot-top)<12) return;
+            ctx.save();
+            ctx.fillStyle='#fff';
+            ctx.font='bold 9px sans-serif';
+            ctx.textAlign='center';
+            ctx.textBaseline='middle';
+            ctx.fillText(val, cx, mid);
+            ctx.restore();
+          });
+        });
+      }
+    }]
   });
 
   // ── C3: Hours by Category — stacked per tech (current month) ──
-  const hOrder  = sortedBy('appt', 2);
+  const hOrder  = alphaOrder;
   const CAT_COLORS = {
     billable: 'rgba(0,172,193,0.85)',
     slaHrs:   'rgba(0,200,83,0.85)',
