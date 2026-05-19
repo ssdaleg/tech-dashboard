@@ -460,20 +460,24 @@ function buildCharts() {
 
   // ── C2: Total Job Oversight ───────────────────────────────────────────────────
   // Bars  = total jobs completed per tech, 3 months grouped side by side
-  // Line  = current month revenue % contribution to team total (secondary Y axis, right)
-  const teamTotalCost = alphaOrder.reduce((s,t) => s+((TD[t].cost||[])[2]||0), 0);
+  // Line  = revenue % contribution — uses most recent month that has actual cost data
+  // Find most recent month index with cost data (May may not have revenue yet)
+  const revMi = [2,1,0].find(mi => alphaOrder.some(t => ((TD[t].cost||[])[mi]||0) > 0)) ?? 1;
+  const revMonthLabel = MONTHS[revMi] + (revMi < 2 ? ' (latest available)' : ' MTD');
+
+  const teamTotalCost = alphaOrder.reduce((s,t) => s+((TD[t].cost||[])[revMi]||0), 0);
   const teamTotalJobs = alphaOrder.reduce((s,t) => s+((TD[t].jobs||[])[2]||0), 0);
 
   const C2_BAR_COLORS = [
-    'rgba(0,172,193,0.28)',   // prev2 — faint teal
-    'rgba(0,172,193,0.55)',   // prev  — mid teal
-    'rgba(0,172,193,0.90)',   // curr  — full teal
+    'rgba(0,172,193,0.28)',
+    'rgba(0,172,193,0.55)',
+    'rgba(0,172,193,0.90)',
   ];
 
-  // Revenue % per tech for current month
+  // Revenue % per tech for the best available month
   const revPctLine = alphaOrder.map(t =>
     teamTotalCost > 0
-      ? parseFloat((((TD[t].cost||[])[2]||0) / teamTotalCost * 100).toFixed(1))
+      ? parseFloat((((TD[t].cost||[])[revMi]||0) / teamTotalCost * 100).toFixed(1))
       : 0
   );
 
@@ -492,7 +496,7 @@ function buildCharts() {
     // Line dataset — revenue % this month
     {
       type: 'line',
-      label: 'Revenue % of team (MTD)',
+      label: 'Revenue % of team — ' + revMonthLabel,
       data: revPctLine,
       yAxisID: 'yPct',
       borderColor: '#F5A623',
