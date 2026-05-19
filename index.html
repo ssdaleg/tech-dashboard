@@ -154,7 +154,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
     </div>
     <div class="panel">
       <div class="p-title">🔧 Jobs Completed</div>
-      <div class="p-sub">Jobs closed (teal) + total hours logged (gold) per tech — 3-month trend side-by-side, brightest = current month. Values labelled on current month bars. Sorted alphabetically.</div>
+      <div class="p-sub">Bar height = total hours (🔵 Appt hrs + 🟡 Other logged). Job count labelled above current month bar. Hover for appt hrs/job ratio. 3-month trend, brightest = current. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c2"></canvas></div>
     </div>
   </div>
@@ -332,12 +332,24 @@ function buildCharts() {
     return CAT_KEYS.reduce((s,k) => s + ((TD[tech][k]||[])[mi]||0), 0);
   }
 
-  // Billable % of total logged hours (not vs. available hrs)
+  // Billable % of total logged hours — falls back to appt-based when LAB data not yet available
   function billablePctLogged(tech, mi) {
     const b   = (TD[tech].billable||[])[mi]||0;
     const tot = totalLogged(tech, mi);
-    return tot > 0 ? Math.round(b / tot * 100) : 0;
+    if (tot > 0) {
+      // LAB data exists — show billable as % of all logged hours
+      return Math.round(b / tot * 100);
+    }
+    // No LAB entries yet — fall back to appt hrs vs available hrs (EWorks data always present)
+    const appt  = (TD[tech].appt||[])[mi]||0;
+    const month = MONTHS[mi];
+    const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
+    const avail = wd * DAILY_TARGET;
+    return avail > 0 ? Math.round(appt / avail * 100) : 0;
   }
+
+  // Flag: does current month have LAB data?
+  const hasLabData = TECHS.some(t => totalLogged(t, 2) > 0);
 
   // Reusable segment-label plugin factory
   function segLabelPlugin(id) {
@@ -366,6 +378,14 @@ function buildCharts() {
         });
       }
     };
+  }
+
+  // Update C1 subtitle to reflect data mode
+  const c1SubEl = document.querySelector('#c1')?.closest('.panel')?.querySelector('.p-sub');
+  if (c1SubEl) {
+    c1SubEl.textContent = hasLabData
+      ? 'Billable hrs (LAB02/09/12) as % of total hours logged per tech. 3-month trend. Green line = 80% target. Sorted alphabetically.'
+      : `${MONTHS[2]}: no LAB time entries yet — showing EWorks appt hrs ÷ available hrs. Prior months show billable % of logged hrs.`;
   }
 
   // ── C1: Billable Utilisation % — of total logged hours ──
@@ -397,7 +417,11 @@ function buildCharts() {
             const mi  = ctx.datasetIndex;
             const b   = (TD[t].billable||[])[mi]||0;
             const tot = totalLogged(t, mi);
-            return ` ${ctx.raw}% billable  (${b.toFixed(1)}h of ${tot.toFixed(1)}h logged)`;
+            if (tot > 0) {
+              return ` ${ctx.raw}% billable  (${b.toFixed(1)}h of ${tot.toFixed(1)}h logged)`;
+            }
+            const appt  = (TD[t].appt||[])[mi]||0;
+            return ` ${ctx.raw}% utilisation  (${appt.toFixed(1)}h appt — no LAB entries yet)`;
           }
         }}
       },
@@ -410,29 +434,36 @@ function buildCharts() {
     plugins:[{id:'tl',afterDraw(c){dline(c,80,'rgba(0,200,83,0.6)','80% TARGET')}}]
   });
 
-  // ── C2: Jobs Completed — 3-month grouped bars, each stacked: Jobs (bottom) + Hours logged (top) ──
-  // 6 datasets: 3 months × 2 metrics.  Each month is its own stack group so months sit side-by-side.
-  const JOB_TEAL  = ['rgba(0,172,193,0.28)','rgba(0,172,193,0.52)','rgba(0,172,193,0.9)'];
-  const HRS_GOLD  = ['rgba(245,166,35,0.22)','rgba(245,166,35,0.45)','rgba(245,166,35,0.82)'];
+  // ── C2: Jobs Completed ──────────────────────────────────────────────────────
+  // Design: 3 grouped month bars per tech, each bar height = total logged hours
+  //   Bottom segment (teal)  = EWorks Appointment hrs
+  //   Top segment    (gold)  = Other logged hrs (total logged − appt)
+  //   Label above bar        = job count  e.g. "47 jobs"
+  //   Label inside appt seg  = appt hrs   e.g. "82.5h"
+  //   Label inside other seg = other hrs  e.g. "14.0h"
+  // This gives: effort scale (bar height), appt ratio (teal proportion), job count (top label)
+  // When no LAB data (other=0) bar = appt hrs only — still meaningful.
+
+  const C2_APPT  = ['rgba(0,172,193,0.25)','rgba(0,172,193,0.50)','rgba(0,172,193,0.90)'];
+  const C2_OTHER = ['rgba(245,166,35,0.20)','rgba(245,166,35,0.42)','rgba(245,166,35,0.80)'];
+
   const c2Datasets = [];
   MONTHS.forEach((m, mi) => {
-    // Bottom segment — Jobs count
+    // Bottom: appt hrs
     c2Datasets.push({
-      label: mi===2 ? 'Jobs completed' : '\u200b'.repeat(mi+1),
-      data:  alphaOrder.map(t => (TD[t].jobs||[])[mi]||0),
-      backgroundColor: JOB_TEAL[mi],
-      borderRadius: 0,
-      borderSkipped: false,
-      stack: 'month'+mi,
+      label: mi===2 ? 'Appt hrs (EWorks)' : '\u200b'.repeat(mi+1),
+      data:  alphaOrder.map(t => (TD[t].appt||[])[mi]||0),
+      backgroundColor: C2_APPT[mi],
+      borderRadius: 0, borderSkipped: false,
+      stack: 'mo'+mi,
     });
-    // Top segment — Total hours logged
+    // Top: other logged hrs (logged − appt); floored at 0
     c2Datasets.push({
-      label: mi===2 ? 'Total hrs logged' : '\u200b\u200b'.repeat(mi+1),
-      data:  alphaOrder.map(t => totalLogged(t, mi)),
-      backgroundColor: HRS_GOLD[mi],
-      borderRadius: mi===2 ? 4 : 2,
-      borderSkipped: false,
-      stack: 'month'+mi,
+      label: mi===2 ? 'Other logged hrs' : '\u200b\u200b'.repeat(mi+1),
+      data:  alphaOrder.map(t => Math.max(0, totalLogged(t,mi) - ((TD[t].appt||[])[mi]||0))),
+      backgroundColor: C2_OTHER[mi],
+      borderRadius: mi===2 ? 4 : 2, borderSkipped: false,
+      stack: 'mo'+mi,
     });
   });
 
@@ -442,13 +473,12 @@ function buildCharts() {
     data:{ labels: alphaOrder, datasets: c2Datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top: 18 } },
       plugins:{
         legend:{
           display:true, position:'top',
-          labels:{
-            color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
-            filter: item => !item.text.startsWith('\u200b')
-          }
+          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
+                   filter: item => !item.text.startsWith('\u200b') }
         },
         tooltip:{...TIP, callbacks:{
           title: ctx => {
@@ -457,52 +487,79 @@ function buildCharts() {
             return t + ' — ' + MONTHS[mi];
           },
           label: ctx => {
-            const v   = ctx.raw;
+            const v = ctx.raw;
             if (!v) return null;
-            const isHrs = ctx.datasetIndex % 2 === 1;
-            return isHrs ? ` Hours logged: ${v.toFixed(1)}h` : ` Jobs completed: ${v}`;
+            const isOther = ctx.datasetIndex % 2 === 1;
+            return isOther ? ` Other logged: ${v.toFixed(1)}h` : ` Appt hrs: ${v.toFixed(1)}h`;
           },
           afterBody: ctx => {
-            const t  = alphaOrder[ctx[0].dataIndex];
-            const mi = Math.floor(ctx[0].datasetIndex / 2);
+            const t    = alphaOrder[ctx[0].dataIndex];
+            const mi   = Math.floor(ctx[0].datasetIndex / 2);
             const jobs = (TD[t].jobs||[])[mi]||0;
-            const hrs  = totalLogged(t, mi);
             const appt = (TD[t].appt||[])[mi]||0;
-            return ['', `Jobs: ${jobs}  ·  Logged: ${hrs.toFixed(1)}h  ·  Appt: ${appt.toFixed(1)}h`];
+            const tot  = totalLogged(t, mi);
+            const hpj  = jobs > 0 ? (appt/jobs).toFixed(1) : '—';
+            return [
+              '',
+              `Jobs completed: ${jobs}`,
+              `Total logged: ${tot.toFixed(1)}h`,
+              `Appt hrs/job: ${hpj}h`,
+            ];
           }
         }}
       },
       scales:{
-        x:{ticks:TX, grid:GRID, stacked:true},
-        y:{ticks:TY, grid:GRID, stacked:true,
-          title:{display:true,text:'Jobs · Hours (combined scale)',color:'#607D8B',font:{size:9}}}
+        x:{ ticks:TX, grid:GRID, stacked:true },
+        y:{ ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
+            title:{display:true,text:'Hours (Appt + Other logged)',color:'#607D8B',font:{size:9}} }
       }
     },
     plugins:[{
-      id:'c2SegLabels',
+      id:'c2Labels',
       afterDatasetsDraw(chart) {
-        // Label both segments on the current-month stacks only (datasets 4 & 5)
-        const {ctx} = chart;
+        const {ctx, scales:{x,y}} = chart;
+        // Current month = datasets 4 (appt) and 5 (other)
+        // Draw segment labels inside current-month bars
         [4, 5].forEach(di => {
           const ds   = chart.data.datasets[di];
           const meta = chart.getDatasetMeta(di);
-          const isHrs = di % 2 === 1;
+          const isOther = di % 2 === 1;
           meta.data.forEach((bar, i) => {
             const val = ds.data[i];
-            if (!val || val < 2) return;
+            if (!val || val < 8) return; // skip tiny segments
             const cx  = bar.x;
             const top = bar.y;
             const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
             const mid = top + (bot - top) / 2;
-            if (Math.abs(bot - top) < 12) return;
+            if (Math.abs(bot - top) < 14) return;
             ctx.save();
             ctx.fillStyle = '#fff';
             ctx.font = 'bold 9px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(isHrs ? val.toFixed(1)+'h' : val, cx, mid);
+            ctx.fillText(val.toFixed(1)+'h', cx, mid);
             ctx.restore();
           });
+        });
+
+        // Job count label above each current-month bar (dataset 4 = appt, bottom of current stack)
+        const apptMeta  = chart.getDatasetMeta(4);
+        const otherMeta = chart.getDatasetMeta(5);
+        alphaOrder.forEach((t, i) => {
+          const jobs = (TD[t].jobs||[])[2]||0;
+          if (!jobs) return;
+          // Top of bar = top of other segment (or appt if other is 0)
+          const otherBar = otherMeta.data[i];
+          const apptBar  = apptMeta.data[i];
+          const barTop   = (otherBar && otherBar.y < apptBar.y) ? otherBar.y : apptBar.y;
+          const cx       = apptBar.x;
+          ctx.save();
+          ctx.fillStyle = '#00ACC1';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(jobs + ' jobs', cx, barTop - 3);
+          ctx.restore();
         });
       }
     }]
