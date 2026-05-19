@@ -154,7 +154,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
     </div>
     <div class="panel">
       <div class="p-title">🔍 Total Job Oversight</div>
-      <div class="p-sub">3-month trend — 🟢 SLA/Maintenance hrs + 🔵 Other hrs per tech. Job count &amp; revenue % labelled above current month. Sorted alphabetically.</div>
+      <div class="p-sub">Bars = total jobs per tech across 3 months (faded → bright). 🟡 Line = current month revenue % contribution to team total — green ≥12% · gold ≥8% · red below. Sorted alphabetically.</div>
       <div class="chart-wrap"><canvas id="c2"></canvas></div>
     </div>
   </div>
@@ -458,119 +458,142 @@ function buildCharts() {
     ]
   });
 
-  // ── C2: Total Job Oversight — all 3 months grouped side by side ──────────────
-  // Each month: stacked bar = SLA hrs (green, bottom) + Other hrs (teal, top)
-  // Labels: job count + revenue % above current month bar; hrs inside segments
+  // ── C2: Total Job Oversight ───────────────────────────────────────────────────
+  // Bars  = total jobs completed per tech, 3 months grouped side by side
+  // Line  = current month revenue % contribution to team total (secondary Y axis, right)
   const teamTotalCost = alphaOrder.reduce((s,t) => s+((TD[t].cost||[])[2]||0), 0);
   const teamTotalJobs = alphaOrder.reduce((s,t) => s+((TD[t].jobs||[])[2]||0), 0);
-  const teamTotalHrs  = alphaOrder.reduce((s,t) => s+totalLogged(t,2), 0);
 
-  const C2_SLA   = ['rgba(0,200,83,0.25)','rgba(0,200,83,0.52)','rgba(0,200,83,0.90)'];
-  const C2_OTHER = ['rgba(0,172,193,0.22)','rgba(0,172,193,0.50)','rgba(0,172,193,0.90)'];
+  const C2_BAR_COLORS = [
+    'rgba(0,172,193,0.28)',   // prev2 — faint teal
+    'rgba(0,172,193,0.55)',   // prev  — mid teal
+    'rgba(0,172,193,0.90)',   // curr  — full teal
+  ];
 
-  const c2Datasets = [];
-  MONTHS.forEach((m, mi) => {
-    c2Datasets.push({
-      label: mi===2 ? 'SLA / Maintenance hrs' : '\u200b'.repeat(mi+1),
-      data:  alphaOrder.map(t => (TD[t].slaHrs||[])[mi]||0),
-      backgroundColor: C2_SLA[mi],
-      borderRadius: 0, borderSkipped: false, stack: 'mo'+mi,
-    });
-    c2Datasets.push({
-      label: mi===2 ? 'Other logged hrs' : '\u200b\u200b'.repeat(mi+1),
-      data:  alphaOrder.map(t => Math.max(0, totalLogged(t,mi) - ((TD[t].slaHrs||[])[mi]||0))),
-      backgroundColor: C2_OTHER[mi],
-      borderRadius: mi===2 ? 4 : 2, borderSkipped: false, stack: 'mo'+mi,
-    });
-  });
+  // Revenue % per tech for current month
+  const revPctLine = alphaOrder.map(t =>
+    teamTotalCost > 0
+      ? parseFloat((((TD[t].cost||[])[2]||0) / teamTotalCost * 100).toFixed(1))
+      : 0
+  );
+
+  const c2Datasets = [
+    // 3 bar datasets — one per month
+    ...MONTHS.map((m, mi) => ({
+      type: 'bar',
+      label: mi===2 ? MONTHS[2]+' (MTD)' : m,
+      data: alphaOrder.map(t => (TD[t].jobs||[])[mi]||0),
+      backgroundColor: C2_BAR_COLORS[mi],
+      borderRadius: mi===2 ? 4 : 2,
+      borderSkipped: false,
+      yAxisID: 'yJobs',
+      order: 1,
+    })),
+    // Line dataset — revenue % this month
+    {
+      type: 'line',
+      label: 'Revenue % of team (MTD)',
+      data: revPctLine,
+      yAxisID: 'yPct',
+      borderColor: '#F5A623',
+      backgroundColor: 'rgba(245,166,35,0.08)',
+      pointBackgroundColor: revPctLine.map(v => v>=12?'#00C853':v>=8?'#F5A623':'#E53935'),
+      pointBorderColor: '#fff',
+      pointBorderWidth: 1.5,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      borderWidth: 2.5,
+      tension: 0.35,
+      fill: true,
+      order: 0,
+    }
+  ];
 
   if(charts.c2) charts.c2.destroy();
   charts.c2 = new Chart(document.getElementById('c2'),{
-    type:'bar',
-    data:{ labels: alphaOrder, datasets: c2Datasets },
+    type: 'bar',
+    data: { labels: alphaOrder, datasets: c2Datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top: 30 } },
+      layout:{ padding:{ top: 22 } },
       plugins:{
         legend:{
           display:true, position:'top',
-          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
-                   filter: item => !item.text.startsWith('\u200b') }
+          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6 }
         },
         tooltip:{...TIP, callbacks:{
-          title: ctx => {
-            const t  = alphaOrder[ctx[0].dataIndex];
-            const mi = Math.floor(ctx[0].datasetIndex / 2);
-            return t + ' — ' + MONTHS[mi];
-          },
+          title: ctx => alphaOrder[ctx[0].dataIndex],
           label: ctx => {
-            const v = ctx.raw; if(!v) return null;
-            return ctx.datasetIndex%2===0 ? ` SLA hrs: ${v.toFixed(1)}h` : ` Other hrs: ${v.toFixed(1)}h`;
+            const v  = ctx.raw;
+            const di = ctx.datasetIndex;
+            if (di === 3) {
+              const t    = alphaOrder[ctx.dataIndex];
+              const cost = (TD[t].cost||[])[2]||0;
+              return ` Revenue share: ${v}%  (${fmtR(cost)})`;
+            }
+            return ` ${ctx.dataset.label}: ${v} jobs`;
           },
           afterBody: ctx => {
             const t    = alphaOrder[ctx[0].dataIndex];
-            const mi   = Math.floor(ctx[0].datasetIndex / 2);
-            const jobs = (TD[t].jobs||[])[mi]||0;
-            const slaH = (TD[t].slaHrs||[])[mi]||0;
-            const totH = totalLogged(t, mi);
-            const cost = (TD[t].cost||[])[mi]||0;
-            const slaPct = totH>0 ? (slaH/totH*100).toFixed(0)+'%' : '—';
-            const teamC  = alphaOrder.reduce((s,x)=>s+((TD[x].cost||[])[mi]||0),0);
-            const revPct = teamC>0 ? (cost/teamC*100).toFixed(1)+'%' : '—';
+            const cost = (TD[t].cost||[])[2]||0;
+            const jobs = (TD[t].jobs||[])[2]||0;
+            const pct  = teamTotalCost>0 ? (cost/teamTotalCost*100).toFixed(1) : '—';
+            const jpct = teamTotalJobs>0 ? (jobs/teamTotalJobs*100).toFixed(1) : '—';
             return ['',
-              `Jobs: ${jobs}`,
-              `SLA hrs: ${slaH.toFixed(1)}h (${slaPct} of time)`,
-              `Revenue: ${fmtR(cost)} — ${revPct} of team`,
+              `MTD Revenue: ${fmtR(cost)}  (${pct}% of team)`,
+              `MTD Jobs: ${jobs}  (${jpct}% of team)`,
             ];
           }
         }}
       },
       scales:{
-        x:{ ticks:TX, grid:GRID, stacked:true },
-        y:{ ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
-            title:{display:true,text:'Hours (SLA + Other)',color:'#607D8B',font:{size:9}} }
+        x:{ ticks:TX, grid:GRID },
+        yJobs:{
+          type:'linear', position:'left',
+          ticks:{ ...TY, stepSize:1 }, grid:GRID,
+          title:{display:true, text:'Jobs completed', color:'#607D8B', font:{size:9}},
+        },
+        yPct:{
+          type:'linear', position:'right',
+          min:0, max: Math.max(20, Math.ceil(Math.max(...revPctLine)/5)*5 + 5),
+          ticks:{ ...TY, callback: v => v+'%' },
+          grid:{ drawOnChartArea:false },
+          title:{display:true, text:'Revenue % of team', color:'#F5A623', font:{size:9}},
+        }
       }
     },
     plugins:[{
-      id:'c2JobLabels',
+      id:'c2Labels',
       afterDatasetsDraw(chart) {
         const {ctx} = chart;
-        // Segment labels on ALL months
-        chart.data.datasets.forEach((ds, di) => {
-          const meta = chart.getDatasetMeta(di);
-          meta.data.forEach((bar, i) => {
-            const val = ds.data[i];
-            if (!val || val < 3) return;
-            const top = bar.y, bot = bar.base !== undefined ? bar.base : bar.y+bar.height;
-            const h = Math.abs(bot-top);
-            if (h < 14) return;
-            ctx.save();
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 9px sans-serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(val.toFixed(1)+'h', bar.x, top+h/2);
-            ctx.restore();
-          });
-        });
-        // Above-bar: job count (teal) + revenue % (gold) on current month only (datasets 4 & 5)
-        const slaMeta   = chart.getDatasetMeta(4);
-        const otherMeta = chart.getDatasetMeta(5);
-        alphaOrder.forEach((t, i) => {
-          const jobs   = (TD[t].jobs||[])[2]||0;
-          const cost   = (TD[t].cost||[])[2]||0;
-          const revPct = teamTotalCost>0 ? (cost/teamTotalCost*100).toFixed(1)+'%' : '';
-          const slaBar   = slaMeta.data[i];
-          const otherBar = otherMeta.data[i];
-          const barTop   = Math.min(slaBar.y, otherBar.y);
-          const cx       = slaBar.x;
+        // Job count labels on current-month bars (dataset index 2)
+        const currMeta = chart.getDatasetMeta(2);
+        currMeta.data.forEach((bar, i) => {
+          const val = c2Datasets[2].data[i];
+          if (!val) return;
+          const cx  = bar.x;
+          const top = bar.y;
+          const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
+          const h   = Math.abs(bot - top);
           ctx.save();
-          ctx.textAlign = 'center';
+          ctx.fillStyle = h > 16 ? '#fff' : '#00ACC1';
           ctx.font = 'bold 9px sans-serif';
-          ctx.fillStyle = '#00ACC1';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = h > 16 ? 'middle' : 'bottom';
+          ctx.fillText(val, cx, h > 16 ? top + h/2 : top - 3);
+          ctx.restore();
+        });
+        // Revenue % labels above each line point
+        const lineMeta = chart.getDatasetMeta(3);
+        lineMeta.data.forEach((point, i) => {
+          const val = revPctLine[i];
+          if (!val) return;
+          ctx.save();
+          ctx.fillStyle = val>=12?'#00C853':val>=8?'#F5A623':'#E53935';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
-          ctx.fillText(jobs ? jobs+' jobs' : '', cx, barTop - 14);
-          ctx.fillStyle = '#F5A623';
-          ctx.fillText(revPct ? revPct+' rev' : '', cx, barTop - 3);
+          ctx.fillText(val+'%', point.x, point.y - 6);
           ctx.restore();
         });
       }
