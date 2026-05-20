@@ -91,6 +91,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 .tp-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-bottom:2px}
 .tp-bar-fill{height:3px;border-radius:2px;transition:width 1.2s ease}
 .tp-bot{display:flex;justify-content:space-between;align-items:center}
+.tp-extra{display:flex;justify-content:space-between;gap:6px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.07);}
 .tp-rev{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tp-rev strong{color:var(--text);font-weight:600}
 .tp-mom{font-size:8px;font-weight:600;flex-shrink:0;margin-left:4px}
@@ -386,32 +387,61 @@ function buildCharts() {
     c1SubEl.textContent = `${MONTHS[2]}: no LAB entries yet — current month shows EWorks appt ÷ available hrs. Prior months show billable % of logged hrs.`;
   }
 
-  // ── C1: Utilisation & Efficiency — % values labelled on every bar ──
+  // Team average billable% this month — used as benchmark line on C1
+  const teamAvgBillPct = Math.round(
+    alphaOrder.reduce((s,t) => s + billablePctLogged(t,2), 0) / alphaOrder.length
+  );
+
+  // ── C1: Billable Efficiency ──
   if(charts.c1) charts.c1.destroy();
   charts.c1 = new Chart(document.getElementById('c1'),{
     type:'bar',
     data:{
       labels: alphaOrder,
-      datasets: MONTHS.map((m, mi) => ({
-        label: m,
-        data: alphaOrder.map(t => billablePctLogged(t, mi)),
-        backgroundColor: mi===2
-          ? alphaOrder.map(t => {
-              const p = billablePctLogged(t, 2);
-              return p>=80?'rgba(0,200,83,0.85)':p>=60?'rgba(245,166,35,0.85)':'rgba(229,57,53,0.80)';
-            })
-          : MC[mi],
-        borderRadius: mi===2?4:2,
-        borderSkipped: false,
-      }))
+      datasets: [
+        ...MONTHS.map((m, mi) => ({
+          type: 'bar',
+          label: m,
+          data: alphaOrder.map(t => billablePctLogged(t, mi)),
+          backgroundColor: mi===2
+            ? alphaOrder.map(t => {
+                const p = billablePctLogged(t, 2);
+                return p>=80?'rgba(0,200,83,0.85)':p>=60?'rgba(245,166,35,0.85)':'rgba(229,57,53,0.80)';
+              })
+            : MC[mi],
+          borderRadius: mi===2?4:2,
+          borderSkipped: false,
+          order: 1,
+        })),
+        // Team average benchmark line
+        {
+          type: 'line',
+          label: 'Team avg ' + MONTHS[2],
+          data: Array(alphaOrder.length).fill(teamAvgBillPct),
+          borderColor: 'rgba(255,255,255,0.45)',
+          borderWidth: 1.5,
+          borderDash: [4,3],
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          tension: 0,
+          fill: false,
+          order: 0,
+        }
+      ]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
       layout:{ padding:{ top: 20 } },
       plugins:{
-        legend: LEG,
+        legend:{
+          display:true, position:'top',
+          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
+            filter: item => item.text !== 'Team avg '+MONTHS[2] // hide from legend, drawn by plugin
+          }
+        },
         tooltip:{...TIP, callbacks:{
           label: ctx => {
+            if (ctx.dataset.type === 'line') return ` Team avg: ${ctx.raw}%`;
             const t   = alphaOrder[ctx.dataIndex];
             const mi  = ctx.datasetIndex;
             const b   = (TD[t].billable||[])[mi]||0;
@@ -429,12 +459,17 @@ function buildCharts() {
       }
     },
     plugins:[
-      { id:'tl', afterDraw(c){ dline(c,80,'rgba(0,200,83,0.6)','80% TARGET') } },
+      { id:'tl', afterDraw(c){
+          dline(c,80,'rgba(0,200,83,0.6)','80% TARGET');
+          dline(c,teamAvgBillPct,'rgba(255,255,255,0.35)','TEAM AVG '+teamAvgBillPct+'%');
+        }
+      },
       {
         id:'c1ValLabels',
         afterDatasetsDraw(chart) {
           const {ctx} = chart;
           chart.data.datasets.forEach((ds, di) => {
+            if (ds.type === 'line') return; // skip avg line dataset
             const meta = chart.getDatasetMeta(di);
             meta.data.forEach((bar, i) => {
               const val = ds.data[i];
@@ -653,12 +688,60 @@ function buildCharts() {
     });
   });
 
+  // Non-billable % per tech for current month — overlaid as line on C3
+  const nbPctCurr = alphaOrder.map(t => {
+    const tot = totalLogged(t, 2);
+    const nb  = ((TD[t].noCharge||[])[2]||0) + ((TD[t].ssTime||[])[2]||0);
+    return tot > 0 ? parseFloat((nb / tot * 100).toFixed(1)) : 0;
+  });
+  const nbPctPrev = alphaOrder.map(t => {
+    const tot = totalLogged(t, 1);
+    const nb  = ((TD[t].noCharge||[])[1]||0) + ((TD[t].ssTime||[])[1]||0);
+    return tot > 0 ? parseFloat((nb / tot * 100).toFixed(1)) : 0;
+  });
+
+  // Add non-billable % lines to c3Datasets
+  c3Datasets.push({
+    type: 'line',
+    label: 'Non-billable % — ' + (MONTHS[1]||'prev'),
+    data: nbPctPrev,
+    yAxisID: 'yNB',
+    borderColor: 'rgba(229,57,53,0.45)',
+    borderWidth: 1.5,
+    borderDash: [4,3],
+    pointRadius: 3,
+    pointBackgroundColor: 'rgba(229,57,53,0.45)',
+    pointBorderColor: 'transparent',
+    tension: 0,
+    fill: false,
+    order: 0,
+    stack: undefined,
+  });
+  c3Datasets.push({
+    type: 'line',
+    label: 'Non-billable % — ' + MONTHS[2],
+    data: nbPctCurr,
+    yAxisID: 'yNB',
+    borderColor: 'rgba(229,57,53,0.9)',
+    borderWidth: 2,
+    borderDash: [],
+    pointRadius: 4,
+    pointBackgroundColor: nbPctCurr.map(v => v>=20?'#E53935':v>=10?'#FFB300':'#00C853'),
+    pointBorderColor: '#fff',
+    pointBorderWidth: 1,
+    tension: 0,
+    fill: false,
+    order: 0,
+    stack: undefined,
+  });
+
   if(charts.c3) charts.c3.destroy();
   charts.c3 = new Chart(document.getElementById('c3'),{
     type:'bar',
     data:{ labels: alphaOrder, datasets: c3Datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top: 16 } },
       plugins:{
         legend:{
           display:true, position:'top',
@@ -668,57 +751,95 @@ function buildCharts() {
         tooltip:{...TIP, callbacks:{
           title: ctx => {
             const t  = alphaOrder[ctx[0].dataIndex];
-            const mi = Math.floor(ctx[0].datasetIndex / CAT_KEYS.length);
+            const di = ctx[0].datasetIndex;
+            if (di >= 12) {
+              const mi = di === 12 ? 1 : 2;
+              return t + ' — Non-billable % ' + MONTHS[mi];
+            }
+            const mi = Math.floor(di / CAT_KEYS.length);
             return t + ' — ' + MONTHS[mi];
           },
           label: ctx => {
-            const v = ctx.raw; if(!v) return null;
-            const ci = ctx.datasetIndex % CAT_KEYS.length;
+            const v = ctx.raw; if(!v && v!==0) return null;
+            const di = ctx.datasetIndex;
+            if (di >= 12) return ` Non-billable: ${v}% of logged hrs`;
+            const ci = di % CAT_KEYS.length;
             return ` ${CAT_LABELS[CAT_KEYS[ci]]}: ${v.toFixed(1)}h`;
           },
           afterBody: ctx => {
             const t  = alphaOrder[ctx[0].dataIndex];
-            const mi = Math.floor(ctx[0].datasetIndex / CAT_KEYS.length);
+            const di = ctx[0].datasetIndex;
+            const mi = di >= 12 ? (di===12?1:2) : Math.floor(di / CAT_KEYS.length);
             const tot  = totalLogged(t, mi);
-            const appt = (TD[t].appt||[])[mi]||0;
             const bill = (TD[t].billable||[])[mi]||0;
+            const nb   = ((TD[t].noCharge||[])[mi]||0) + ((TD[t].ssTime||[])[mi]||0);
             const billPct = tot>0 ? (bill/tot*100).toFixed(0)+'%' : '—';
-            return ['', `Total logged: ${tot.toFixed(1)}h`, `Appt hrs: ${appt.toFixed(1)}h`, `Billable: ${billPct}`];
+            const nbPct   = tot>0 ? (nb/tot*100).toFixed(0)+'%'   : '—';
+            return ['', `Billable: ${billPct}`, `Non-billable: ${nbPct}`, `Total logged: ${tot.toFixed(1)}h`];
           }
         }}
       },
       scales:{
         x:{ ticks:TX, grid:GRID, stacked:true },
         y:{ ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
-            title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}} }
+            title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}} },
+        yNB:{
+          type:'linear', position:'right',
+          min:0, max:50,
+          ticks:{ ...TY, callback: v => v+'%' },
+          grid:{ drawOnChartArea:false },
+          title:{display:true, text:'Non-billable %', color:'rgba(229,57,53,0.8)', font:{size:9}},
+        }
       }
     },
-    plugins:[{
-      id:'c3SegLabels',
-      afterDatasetsDraw(chart) {
-        const {ctx} = chart;
-        chart.data.datasets.forEach((ds, di) => {
-          const meta = chart.getDatasetMeta(di);
-          meta.data.forEach((bar, i) => {
-            const val = ds.data[i];
-            if (!val || val < 1) return;
-            const top = bar.y, bot = bar.base !== undefined ? bar.base : bar.y+bar.height;
-            const h = Math.abs(bot-top);
-            if (h < 13) return;
+    plugins:[
+      {
+        id:'c3SegLabels',
+        afterDatasetsDraw(chart) {
+          const {ctx} = chart;
+          chart.data.datasets.forEach((ds, di) => {
+            if (ds.type === 'line') return;
+            const meta = chart.getDatasetMeta(di);
+            meta.data.forEach((bar, i) => {
+              const val = ds.data[i];
+              if (!val || val < 1) return;
+              const top = bar.y, bot = bar.base !== undefined ? bar.base : bar.y+bar.height;
+              const h = Math.abs(bot-top);
+              if (h < 13) return;
+              ctx.save();
+              ctx.fillStyle = '#fff';
+              ctx.font = 'bold 9px sans-serif';
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              ctx.fillText(val.toFixed(1), bar.x, top+h/2);
+              ctx.restore();
+            });
+          });
+        }
+      },
+      {
+        id:'c3NbLabels',
+        afterDatasetsDraw(chart) {
+          // Label non-billable % above each point on the current-month line only (dataset index 13)
+          const {ctx} = chart;
+          const ds   = chart.data.datasets[13];
+          if (!ds) return;
+          const meta = chart.getDatasetMeta(13);
+          meta.data.forEach((point, i) => {
+            const val = nbPctCurr[i];
+            if (!val) return;
             ctx.save();
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 9px sans-serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(val.toFixed(1), bar.x, top+h/2);
+            ctx.fillStyle = val>=20?'#E53935':val>=10?'#FFB300':'#00C853';
+            ctx.font = 'bold 8px sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.fillText(val+'%', point.x, point.y - 5);
             ctx.restore();
           });
-        });
+        }
       }
-    }]
+    ]
   });
 
     // ── C4: Team Revenue 3-Month Trend — Stacked (Adhoc + SLA Recurring) ──
-  // Use API-provided adhoc totals if available, otherwise sum from TD
   const adhocByMonth  = MONTHS.map((m,mi) =>
     ADHOC3[mi] > 0 ? ADHOC3[mi] : TECHS.reduce((s,t)=>s+((TD[t].cost||[])[mi]||0),0)
   );
@@ -727,6 +848,11 @@ function buildCharts() {
   const mTargets      = MONTHS.map(m => MONTH_TARGETS[m] || REV_TARGET);
   const mtdExpected   = REV_TARGET * (WORK_DAYS_DONE / (WORK_DAYS_MONTH||1));
   const barLabels     = MONTHS.map((m,mi) => mi===2 ? m+' (MTD)' : m);
+
+  // Projected month-end: extrapolate current MTD revenue over remaining working days
+  const projectedRevenue = WORK_DAYS_DONE > 0
+    ? Math.round(totalByMonth[2] / WORK_DAYS_DONE * WORK_DAYS_MONTH)
+    : 0;
 
   if(charts.c4) charts.c4.destroy();
   charts.c4 = new Chart(document.getElementById('c4'),{
@@ -771,7 +897,8 @@ function buildCharts() {
               const pct   = tgt>0 ? Math.round(total/tgt*100) : 0;
               if(mi===2){
                 const pace = mtdExpected>0 ? Math.round(total/mtdExpected*100) : 0;
-                return ['','Total: '+fmtR(total),'Target: '+fmtR(tgt),'MTD Pace: '+pace+'%','Adhoc: '+fmtR(adhocByMonth[mi]),'SLA: '+fmtR(slaByMonth[mi])];
+                const projPct = mTargets[2]>0 ? Math.round(projectedRevenue/mTargets[2]*100) : 0;
+                return ['','Total MTD: '+fmtR(total),'Target: '+fmtR(mTargets[2]),'MTD Pace: '+pace+'%','→ Projected EOM: '+fmtR(projectedRevenue)+' ('+projPct+'% of target)','Adhoc: '+fmtR(adhocByMonth[mi]),'SLA: '+fmtR(slaByMonth[mi])];
               }
               return ['','Total: '+fmtR(total),'Target: '+fmtR(tgt),'Attainment: '+pct+'%','Adhoc: '+fmtR(adhocByMonth[mi]),'SLA: '+fmtR(slaByMonth[mi])];
             }
@@ -818,6 +945,17 @@ function buildCharts() {
           ctx.fillText('Pace '+fmtR(mtdExpected),xMTD+3,chartArea.top+22);
           ctx.restore();
         }
+        // Projected month-end revenue line
+        const xProj = x.getPixelForValue(projectedRevenue);
+        if(projectedRevenue>0&&xProj>=chartArea.left&&xProj<=chartArea.right){
+          ctx.save();
+          ctx.strokeStyle='rgba(245,166,35,0.6)';ctx.lineWidth=2;ctx.setLineDash([6,3]);
+          ctx.beginPath();ctx.moveTo(xProj,chartArea.top);ctx.lineTo(xProj,chartArea.bottom);ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle='rgba(245,166,35,0.9)';ctx.font='bold 9px sans-serif';
+          ctx.fillText('Projected '+fmtR(projectedRevenue),xProj+3,chartArea.top+34);
+          ctx.restore();
+        }
       }
     }]
   });
@@ -858,6 +996,12 @@ function updateHeader() {
   } else {
     icon = '🔴▼';
   }
+  const projRevTotal = WORK_DAYS_DONE > 0
+    ? Math.round(total / WORK_DAYS_DONE * WORK_DAYS_MONTH)
+    : 0;
+  const projPctOfTarget = REV_TARGET > 0 ? Math.round(projRevTotal / REV_TARGET * 100) : 0;
+  const projColor = projPctOfTarget >= 100 ? '#00C853' : projPctOfTarget >= 85 ? '#FFB300' : '#E53935';
+
   document.getElementById('perf-icon').textContent = icon;
   document.getElementById('rev-heading').textContent = heading;
   document.getElementById('rev-heading').style.color = headingColor;
@@ -865,6 +1009,17 @@ function updateHeader() {
   document.getElementById('rev-label').textContent   = fmtR(total)+' / '+fmtR(REV_TARGET)+' ('+Math.round(fullPct)+'% of target · pace '+pacePct+'%)';
   document.getElementById('mtd-badge').textContent   = 'MTD Day '+WORK_DAYS_DONE+' of '+WORK_DAYS_MONTH+' · Target '+(WORK_DAYS_DONE*DAILY_TARGET)+'h/tech';
   document.getElementById('month-badge').textContent = MONTHS[2];
+
+  // Projected EOM revenue badge — create or update
+  let projEl = document.getElementById('proj-badge');
+  if (!projEl) {
+    projEl = document.createElement('span');
+    projEl.id = 'proj-badge';
+    projEl.style.cssText = 'margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.25);';
+    document.getElementById('mtd-badge').insertAdjacentElement('afterend', projEl);
+  }
+  projEl.textContent   = '→ Projected EOM: ' + fmtR(projRevTotal) + ' (' + projPctOfTarget + '% of target)';
+  projEl.style.color   = projColor;
 }
 
 // ── BOTTOM PILLS ──────────────────────────────────────────────────────────────
@@ -875,18 +1030,38 @@ function buildPills() {
   const revTop = TECHS.slice().sort((a,b)=>((TD[b].cost||[])[2]||0)-((TD[a].cost||[])[2]||0))[0];
   const utTop  = TECHS.slice().sort((a,b)=>billPct(b,2)-billPct(a,2))[0];
 
-  TECHS.forEach(tech=>{
+  // Rev/hr top performer
+  const revHrTop = TECHS.slice().sort((a,b) => {
+    const tha = totalLogged(a,revMi)||1; const thb = totalLogged(b,revMi)||1;
+    return ((TD[b].cost||[])[revMi]||0)/thb - ((TD[a].cost||[])[revMi]||0)/tha;
+  })[0];
+
+  TECHS.forEach(tech => {
     const c    = COLOR(tech);
     const util = billPct(tech,2);
     const prev = billPct(tech,1);
-    const diff = util-prev;
+    const diff = util - prev;
     const avg  = avgHrs(tech,2);
     const jobs = (TD[tech].jobs||[])[2]||0;
-    const rev  = (TD[tech].cost||[])[2]||0;
+    const rev  = (TD[tech].cost||[])[revMi]||0;
+
+    // Revenue per logged hour — use whichever month has cost data
+    const hrs       = totalLogged(tech, revMi);
+    const revPerHr  = hrs > 0 ? Math.round(rev / hrs) : 0;
+    const revHrColor = revPerHr >= 500 ? 'var(--green)' : revPerHr >= 300 ? 'var(--gold)' : 'var(--red)';
+
+    // Non-billable % (noCharge + ssTime) of total logged — current month or fallback
+    const nbMi   = [2,1,0].find(mi => totalLogged(tech,mi) > 0) ?? 2;
+    const nbTot  = totalLogged(tech, nbMi);
+    const nb     = ((TD[tech].noCharge||[])[nbMi]||0) + ((TD[tech].ssTime||[])[nbMi]||0);
+    const nbPct  = nbTot > 0 ? Math.round(nb / nbTot * 100) : 0;
+    const nbColor = nbPct >= 20 ? 'var(--red)' : nbPct >= 10 ? 'var(--gold)' : 'var(--green)';
+
     const barC = util>=100?'var(--green)':util>=80?'var(--gold)':util>=60?'var(--amber)':'var(--red)';
     const mCls = diff>2?'up':diff<-2?'dn':'fl';
     const mTxt = diff>2?`▲${diff}%`:diff<-2?`▼${Math.abs(diff)}%`:'→';
-    const cr   = [utTop===tech?'⏱':'',jobTop===tech?'🏆':'',revTop===tech?'💰':''].filter(Boolean).join('');
+    const cr   = [utTop===tech?'⏱':'', jobTop===tech?'🏆':'', revTop===tech?'💰':'', revHrTop===tech?'⚡':''].filter(Boolean).join('');
+
     bar.insertAdjacentHTML('beforeend',`
       <div class="tp" role="listitem">
         ${cr?`<div class="tp-crown">${cr}</div>`:''}
@@ -900,6 +1075,10 @@ function buildPills() {
         <div class="tp-bot">
           <div class="tp-rev"><strong>${fmtR(rev)}</strong> MTD</div>
           <div class="tp-mom ${mCls}">${mTxt} vs ${MONTHS[1]||'prev'}</div>
+        </div>
+        <div class="tp-extra">
+          <div class="tp-n" title="Revenue per logged hour">⚡ <strong style="color:${revHrColor}">R${revPerHr}/h</strong></div>
+          <div class="tp-n" title="Non-billable % of logged hours">🚫 <strong style="color:${nbColor}">${nbPct}% NB</strong></div>
         </div>
       </div>`);
   });
