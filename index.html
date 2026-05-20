@@ -313,6 +313,28 @@ function dline(chart, val, color, label) {
   ctx.restore();
 }
 
+// ── SHARED HELPERS (used by buildCharts, buildPills, updateHeader) ─────────────
+function totalLogged(tech, mi) {
+  const keys = ['billable','slaHrs','ssTime','noCharge'];
+  return keys.reduce((s,k) => s + ((TD[tech][k]||[])[mi]||0), 0);
+}
+
+function billablePctLogged(tech, mi) {
+  const b   = (TD[tech].billable||[])[mi]||0;
+  const tot = totalLogged(tech, mi);
+  if (tot > 0) return Math.round(b / tot * 100);
+  const appt  = (TD[tech].appt||[])[mi]||0;
+  const month = MONTHS[mi];
+  const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
+  const avail = wd * DAILY_TARGET;
+  return avail > 0 ? Math.round(appt / avail * 100) : 0;
+}
+
+// Most recent month index with actual cost data — used by C2 revenue line and pills
+function getRevMi() {
+  return [2,1,0].find(mi => TECHS.some(t => ((TD[t].cost||[])[mi]||0) > 0)) ?? 1;
+}
+
 function buildCharts() {
   // All charts use alphabetical order (TECHS array is already alphabetical)
   const alphaOrder = [...TECHS];
@@ -320,34 +342,12 @@ function buildCharts() {
   // Shared category config
   const CAT_KEYS   = ['billable','slaHrs','ssTime','noCharge'];
   const CAT_LABELS = {billable:'Billable (LAB02/09/12)',slaHrs:'SLA / Maintenance',ssTime:'SS Time',noCharge:'No Charge'};
-  // Per-month shades: [prev2, prev, current] — opacity increases toward current
   const CAT_SHADES = {
     billable: ['rgba(0,172,193,0.3)','rgba(0,172,193,0.55)','rgba(0,172,193,0.9)'],
     slaHrs:   ['rgba(0,200,83,0.3)', 'rgba(0,200,83,0.55)', 'rgba(0,200,83,0.9)'],
     ssTime:   ['rgba(245,166,35,0.3)','rgba(245,166,35,0.55)','rgba(245,166,35,0.9)'],
     noCharge: ['rgba(229,57,53,0.3)', 'rgba(229,57,53,0.55)', 'rgba(229,57,53,0.85)'],
   };
-
-  // Total logged hours (all LAB categories) for a tech in a given month index
-  function totalLogged(tech, mi) {
-    return CAT_KEYS.reduce((s,k) => s + ((TD[tech][k]||[])[mi]||0), 0);
-  }
-
-  // Billable % of total logged hours — falls back to appt-based when LAB data not yet available
-  function billablePctLogged(tech, mi) {
-    const b   = (TD[tech].billable||[])[mi]||0;
-    const tot = totalLogged(tech, mi);
-    if (tot > 0) {
-      // LAB data exists — show billable as % of all logged hours
-      return Math.round(b / tot * 100);
-    }
-    // No LAB entries yet — fall back to appt hrs vs available hrs (EWorks data always present)
-    const appt  = (TD[tech].appt||[])[mi]||0;
-    const month = MONTHS[mi];
-    const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
-    const avail = wd * DAILY_TARGET;
-    return avail > 0 ? Math.round(appt / avail * 100) : 0;
-  }
 
   // Flag: does current month have LAB data?
   const hasLabData = TECHS.some(t => totalLogged(t, 2) > 0);
@@ -494,10 +494,7 @@ function buildCharts() {
   });
 
   // ── C2: Total Job Oversight ───────────────────────────────────────────────────
-  // Bars  = total jobs completed per tech, 3 months grouped side by side
-  // Line  = revenue % contribution — uses most recent month that has actual cost data
-  // Find most recent month index with cost data (May may not have revenue yet)
-  const revMi = [2,1,0].find(mi => alphaOrder.some(t => ((TD[t].cost||[])[mi]||0) > 0)) ?? 1;
+  const revMi = getRevMi();
   const revMonthLabel = MONTHS[revMi] + (revMi < 2 ? ' (latest available)' : ' MTD');
 
   const teamTotalCost = alphaOrder.reduce((s,t) => s+((TD[t].cost||[])[revMi]||0), 0);
@@ -1029,6 +1026,8 @@ function buildPills() {
   const jobTop = TECHS.slice().sort((a,b)=>((TD[b].jobs||[])[2]||0)-((TD[a].jobs||[])[2]||0))[0];
   const revTop = TECHS.slice().sort((a,b)=>((TD[b].cost||[])[2]||0)-((TD[a].cost||[])[2]||0))[0];
   const utTop  = TECHS.slice().sort((a,b)=>billPct(b,2)-billPct(a,2))[0];
+
+  const revMi = getRevMi();
 
   // Rev/hr top performer
   const revHrTop = TECHS.slice().sort((a,b) => {
