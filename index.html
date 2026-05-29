@@ -3,199 +3,530 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Superior Support — Performance Dashboard</title>
+<title>SS — Tech Scoreboard</title>
 <link rel="icon" href="data:,">
-<script src="chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --navy:#0A1628;--blue:#0D3B6E;--teal:#00838F;--lteal:#00ACC1;--sky:#B3E5FC;
-  --gold:#F5A623;--green:#00C853;--amber:#FFB300;--red:#E53935;
-  --surface:#0F1F3D;--card:#152744;--border:rgba(0,172,193,0.15);
-  --text:#E8F4FD;--muted:#607D8B;
+  --bg:#0E2A3F;--surface:#133452;--card:#174060;--border:rgba(0,200,230,0.18);
+  --teal:#00C8E6;--teal-dim:rgba(0,200,230,0.13);
+  --blue:#1E7EC8;--amber:#FFB74D;--green:#81C784;--red:#EF5350;
+  --text:#FFFFFF;--muted:#7BBDD0;--faint:rgba(0,200,230,0.07);
+  --fd:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;
 }
-html,body{width:100%;height:100%;background:var(--navy);color:var(--text);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;overflow:hidden}
-#app{width:100vw;height:100vh;display:grid;grid-template-rows:50px 1fr 112px}
+html,body{width:100%;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:var(--fb);font-size:13px;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:rgba(0,200,230,0.18);border-radius:2px}
+
+/* LOADING */
+#loading{position:fixed;inset:0;z-index:400;
+  background:linear-gradient(135deg,#0E2A3F 0%,#133452 60%,#0E2A3F 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.ring{width:46px;height:46px;border-radius:50%;
+  border:3px solid rgba(0,200,230,0.1);border-top-color:var(--teal);
+  animation:spin .85s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-family:var(--fd);font-size:11px;font-weight:700;
+  letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
 
 /* HEADER */
-header{display:flex;align-items:center;justify-content:space-between;padding:0 18px;
-  background:linear-gradient(90deg,var(--blue),var(--teal));border-bottom:1px solid var(--border)}
-.logo{display:flex;align-items:center;gap:10px}
-.logo-mark{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,var(--lteal),#1565C0);
-  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff}
-.logo-text{font-size:15px;font-weight:700;color:#fff}
-.logo-text span{opacity:0.6;font-weight:400;font-size:12px;margin-left:4px}
-.rev-strip{flex:1;max-width:480px;margin:0 28px}
-.rev-top{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,0.65);margin-bottom:5px}
-.rev-top strong{color:#fff}
-.rev-track{height:10px;background:rgba(255,255,255,0.12);border-radius:5px;overflow:hidden}
-.rev-fill{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--lteal),var(--green));transition:width 1.5s ease;width:0%}
-.hdr-r{display:flex;align-items:center;gap:12px}
-.badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:16px;white-space:nowrap}
-.b-mtd{background:rgba(0,172,193,0.2);color:var(--sky);border:1px solid rgba(0,172,193,0.35)}
-.b-mon{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2)}
-#clock{font-size:17px;font-weight:600;color:rgba(255,255,255,0.55);font-variant-numeric:tabular-nums}
+header{height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;position:sticky;top:0;z-index:100;
+  background:#0E2A3F;border-bottom:1px solid rgba(0,200,230,0.25)}
+.logo{display:flex;align-items:center;gap:8px}
+.lm{width:32px;height:32px;border-radius:7px;flex-shrink:0;
+  background:linear-gradient(135deg,#00C8E6,#1E7EC8);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:14px;font-weight:900;color:#fff;
+  box-shadow:0 0 14px rgba(0,200,230,0.3)}
+.ln{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--text)}
+.ln em{font-style:normal;opacity:.3;font-weight:400;font-size:11px;margin-left:4px}
+.hdr-mid{font-family:var(--fd);font-size:17px;font-weight:900;letter-spacing:5px;
+  text-transform:uppercase;color:var(--teal);
+  text-shadow:0 0 22px rgba(0,200,230,0.55),0 1px 3px rgba(0,0,0,0.5)}
+.hdr-r{display:flex;align-items:center;gap:8px}
+#period-badge{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;background:var(--teal-dim);
+  border:1px solid rgba(0,200,230,0.22);color:var(--teal);
+  padding:3px 9px;border-radius:4px}
+.icon-btn{background:var(--faint);border:1px solid var(--border);color:var(--muted);
+  width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;transition:all .2s}
+.icon-btn:hover{background:rgba(0,200,230,0.12);color:var(--teal)}
+.tv-btn{background:linear-gradient(135deg,rgba(0,200,230,0.15),rgba(30,126,200,0.15));
+  border:1px solid rgba(0,200,230,0.3);color:var(--teal);
+  height:28px;padding:0 11px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--fd);
+  font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  display:flex;align-items:center;gap:5px;transition:all .2s}
+.tv-btn:hover{background:linear-gradient(135deg,rgba(0,200,230,0.25),rgba(30,126,200,0.25))}
+#clock{font-family:var(--fd);font-size:15px;font-weight:600;
+  color:rgba(0,200,230,0.3);letter-spacing:1px}
 
-/* MAIN: 2 chart columns + right praise panel */
-#main{display:grid;grid-template-columns:1fr 1fr 210px;gap:1px;background:var(--border);overflow:hidden}
+/* PAGE */
+#page{padding:12px 18px 24px;display:flex;flex-direction:column;gap:12px}
 
-/* Each chart column: 2 stacked panels */
-.col{display:grid;grid-template-rows:1fr 1fr;gap:1px;background:var(--border)}
-.panel{background:var(--surface);padding:10px 14px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
-.p-title{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
-  color:var(--lteal);display:flex;align-items:center;gap:6px}
-.p-title::after{content:'';flex:1;height:1px;background:var(--border)}
-.p-sub{font-size:9px;color:var(--muted);line-height:1.4;margin-top:-2px}
-.chart-wrap{flex:1;position:relative;min-height:0}
+/* SECTION */
+.sec-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sec-lbl{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2.5px;
+  text-transform:uppercase;color:#C5E8F2;
+  display:flex;align-items:center;gap:6px}
+.sec-lbl::before{content:'';width:3px;height:11px;
+  background:linear-gradient(180deg,var(--teal),var(--blue));border-radius:2px}
+.sec-note{font-size:10px;color:var(--muted)}
 
-/* Right praise panel */
-#praise-panel{background:var(--surface);border-left:1px solid var(--border);
-  padding:12px 10px;display:flex;flex-direction:column;gap:7px;overflow:hidden}
-@keyframes praise-arrive{
-  0%{transform:translateY(-12px) scale(0.96);opacity:0;box-shadow:0 0 0 0 rgba(245,166,35,0)}
-  40%{transform:translateY(2px) scale(1.01);opacity:1;box-shadow:0 0 22px 4px rgba(245,166,35,0.35)}
-  70%{transform:translateY(-1px) scale(1);box-shadow:0 0 12px 2px rgba(245,166,35,0.2)}
-  100%{transform:translateY(0) scale(1);box-shadow:0 0 8px 1px rgba(245,166,35,0.12)}
-}
-@keyframes gold-pulse{
-  0%,100%{box-shadow:0 0 8px 1px rgba(245,166,35,0.12);border-color:rgba(245,166,35,0.5)}
-  50%{box-shadow:0 0 20px 5px rgba(245,166,35,0.35);border-color:rgba(245,166,35,0.9)}
-}
-.praise-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px;flex-shrink:0;transition:border-color 0.3s}
-.praise-card.ft{border-color:rgba(245,166,35,0.5);background:linear-gradient(135deg,rgba(245,166,35,0.08),rgba(0,131,143,0.05));
-  animation:praise-arrive 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards, gold-pulse 2.5s ease-in-out 0.6s infinite}
-.praise-new-banner{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--gold);margin-bottom:4px;display:flex;align-items:center;gap:4px}
-.praise-new-banner::before{content:'★ NEW';background:var(--gold);color:var(--navy);
-  padding:1px 5px;border-radius:3px;font-size:7px;letter-spacing:1px}
-.p-stars{color:var(--gold);font-size:10px;letter-spacing:1px;margin-bottom:2px}
-.p-text{font-size:10px;line-height:1.45;opacity:0.85;font-style:italic}
-.p-from{font-size:9px;color:var(--muted);margin-top:3px}
-.p-tag{display:inline-block;font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;
-  margin-top:3px;text-transform:uppercase;letter-spacing:0.5px}
-.add-btn{margin-top:auto;background:rgba(0,131,143,0.12);border:1px solid rgba(0,172,193,0.25);
-  color:var(--lteal);font-size:10px;font-weight:600;padding:7px;border-radius:6px;
-  cursor:pointer;text-align:center;font-family:inherit}
-.add-btn:hover{background:rgba(0,131,143,0.25)}
+/* PRAISE */
+.praise-row{display:flex;gap:9px;overflow-x:auto;padding-bottom:3px}
+.pc{flex:0 0 198px;background:var(--card);border:1px solid rgba(0,200,230,0.22);
+  border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:5px;
+  transition:border-color .25s,transform .2s}
+.pc:hover{border-color:rgba(0,200,230,0.28);transform:translateY(-1px)}
+.pc.newest{border-color:rgba(0,200,230,0.5);
+  background:linear-gradient(140deg,rgba(0,200,230,0.08),var(--card) 60%);
+  animation:cpulse 2.5s ease-in-out infinite}
+@keyframes cpulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,230,0)}
+  50%{box-shadow:0 0 14px 2px rgba(0,200,230,0.12)}}
+.p-stars{color:var(--amber);font-size:9px;letter-spacing:1.5px}
+.p-tech{font-family:var(--fd);font-size:16px;font-weight:800;line-height:1;
+  color:#FFFFFF;text-shadow:0 1px 3px rgba(0,0,0,0.4)}
+.p-quote{font-size:10px;color:rgba(220,240,248,0.72);line-height:1.45;font-style:italic;flex:1}
+.p-foot{display:flex;justify-content:space-between}
+.p-cust{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-date{font-size:9px;color:var(--muted);flex-shrink:0}
+.new-chip{background:var(--teal);color:#000;font-family:var(--fd);
+  font-size:7px;font-weight:900;letter-spacing:1px;padding:1px 5px;border-radius:2px;align-self:flex-start}
+.add-btn{flex:0 0 110px;align-self:stretch;display:flex;align-items:center;
+  justify-content:center;flex-direction:column;gap:4px;
+  background:var(--teal-dim);border:1px dashed rgba(0,200,230,0.28);
+  color:var(--teal);border-radius:10px;font-family:var(--fd);
+  font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  cursor:pointer;transition:all .2s;min-height:80px}
+.add-btn:hover{background:rgba(0,200,230,0.17);border-color:rgba(0,200,230,0.5)}
+.add-btn span{font-size:16px}
 
-/* BOTTOM BAR */
-#bottom{border-top:1px solid var(--border);background:var(--blue);display:flex;align-items:stretch;overflow:hidden}
-.tp{flex:1;display:flex;flex-direction:column;justify-content:center;
-  padding:5px 7px;border-right:1px solid var(--border);position:relative;min-width:0}
-.tp:last-child{border-right:none}
-.tp-name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.tp-nums{display:flex;gap:5px;flex-wrap:nowrap;margin-bottom:3px}
-.tp-n{font-size:9px;color:var(--muted);white-space:nowrap}
-.tp-n strong{font-weight:700;font-variant-numeric:tabular-nums}
-.tp-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-bottom:2px}
-.tp-bar-fill{height:3px;border-radius:2px;transition:width 1.2s ease}
-.tp-bot{display:flex;justify-content:space-between;align-items:center}
-.tp-extra{display:flex;justify-content:space-between;gap:6px;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.07);}
-.tp-rev{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tp-rev strong{color:var(--text);font-weight:600}
-.tp-mom{font-size:8px;font-weight:600;flex-shrink:0;margin-left:4px}
-.tp-mom.up{color:var(--green)}.tp-mom.dn{color:var(--red)}.tp-mom.fl{color:var(--muted)}
-.tp-crown{position:absolute;top:3px;right:4px;font-size:10px;line-height:1}
+/* WEEKLY CHAMPION */
+#spotlight{background:linear-gradient(90deg,#174060 0%,#133452 55%,#0E2A3F 100%);
+  border:1px solid rgba(0,200,230,0.22);border-radius:12px;
+  padding:11px 18px;display:flex;align-items:center;gap:14px;
+  position:relative;overflow:hidden}
+#spotlight::after{content:'';position:absolute;right:0;top:0;bottom:0;width:28%;
+  background:radial-gradient(ellipse at 90% 50%,rgba(30,126,200,0.1) 0%,transparent 70%);
+  pointer-events:none}
+.sp-crown{font-size:22px;flex-shrink:0;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-4px) rotate(3deg)}}
+.sp-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:15px;font-weight:900;
+  border:2px solid var(--teal);box-shadow:0 0 0 3px rgba(0,200,230,0.12),0 0 16px rgba(0,200,230,0.2)}
+.sp-info{display:flex;flex-direction:column;gap:2px}
+.sp-label{font-family:var(--fd);font-size:9px;font-weight:700;letter-spacing:2.5px;
+  text-transform:uppercase;color:rgba(0,200,230,0.5)}
+.sp-name{font-family:var(--fd);font-size:26px;font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;line-height:1;
+  background:linear-gradient(120deg,#FFFFFF 30%,rgba(0,220,255,0.8));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 1px 4px rgba(0,0,0,0.5))}
+.mgr-badge{display:inline-flex;align-items:center;gap:4px;
+  background:rgba(255,183,77,0.14);border:1px solid rgba(255,183,77,0.32);
+  border-radius:4px;padding:2px 8px;
+  font-family:var(--fd);font-size:9px;font-weight:700;color:var(--amber);
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;width:fit-content}
+.sp-div{width:1px;height:32px;background:var(--border);flex-shrink:0;margin:0 2px}
+.sp-stat{display:flex;flex-direction:column;align-items:center;gap:1px;padding:0 8px}
+.sp-val{font-family:var(--fd);font-size:19px;font-weight:900;line-height:1;
+  text-shadow:0 1px 4px rgba(0,0,0,0.4)}
+.sp-lbl{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.sp-pts{display:flex;flex-direction:column;align-items:center;
+  background:var(--teal-dim);border:1px solid rgba(0,200,230,0.22);
+  border-radius:8px;padding:6px 14px;margin-left:auto;flex-shrink:0;z-index:1}
+.sp-pts-v{font-family:var(--fd);font-size:28px;font-weight:900;color:var(--teal);line-height:1}
+.sp-pts-l{font-size:7px;color:rgba(0,200,230,0.45);text-transform:uppercase;letter-spacing:1px}
+.sp-pts-note{font-size:8px;color:var(--muted);margin-top:1px}
 
-/* MODAL */
-#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:100;align-items:center;justify-content:center}
+/* CHART GRID */
+#chart-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;width:100%}
+@media(max-width:1200px){#chart-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:700px){#chart-grid{grid-template-columns:repeat(2,1fr)}}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:11px;
+  padding:11px 9px 9px;display:flex;flex-direction:column;gap:7px;
+  transition:border-color .25s,transform .25s;position:relative;min-width:0}
+.chart-card:hover{border-color:rgba(0,200,230,0.4);transform:translateY(-2px);
+  box-shadow:0 4px 20px rgba(0,0,0,0.35)}
+.chart-card.is-top{border-color:rgba(0,200,230,0.52);
+  background:linear-gradient(175deg,rgba(0,200,230,0.07),var(--card) 52%)}
+.cc-head{display:flex;align-items:center;gap:7px}
+.cc-av{width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:11px;font-weight:900}
+.cc-info{flex:1;min-width:0}
+.cc-name{font-family:var(--fd);font-size:17px;font-weight:900;line-height:1;
+  display:flex;align-items:center;gap:3px}
+.cc-util-row{display:flex;align-items:center;gap:4px;margin-top:2px}
+.cc-pct{font-family:var(--fd);font-size:9px;font-weight:700;flex-shrink:0;min-width:24px}
+.cc-track{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.cc-bar{height:3px;border-radius:2px;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.cc-chart{position:relative;height:150px;width:100%}
+.cc-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;
+  padding-top:6px;border-top:1px solid var(--border)}
+.cc-stat{display:flex;flex-direction:column;align-items:center;gap:1px}
+.cc-stat-v{font-family:var(--fd);font-size:12px;font-weight:900;line-height:1}
+.cc-stat-l{font-size:6px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.cc-praise{display:flex;align-items:center;justify-content:center;gap:3px;
+  background:rgba(0,200,230,0.07);border:1px solid rgba(0,200,230,0.14);
+  border-radius:4px;padding:3px 6px;
+  font-family:var(--fd);font-size:9px;font-weight:700;color:rgba(0,200,230,0.7)}
+.cc-ytd{display:flex;align-items:center;justify-content:space-between;
+  padding:3px 7px;border-radius:4px;
+  background:rgba(30,126,200,0.1);border:1px solid rgba(30,126,200,0.2);
+  font-family:var(--fd);font-size:9px;font-weight:700}
+.cc-ytd-pts{color:var(--teal)}
+.cc-ytd-rank{color:var(--muted)}
+/* Crown button — reveals on card hover */
+.cc-crown-btn{position:absolute;top:7px;right:7px;background:none;border:none;
+  cursor:pointer;font-size:13px;opacity:0;transition:opacity .2s;
+  line-height:1;padding:3px;border-radius:4px}
+.chart-card:hover .cc-crown-btn{opacity:.45}
+.cc-crown-btn:hover{opacity:1!important;background:rgba(255,183,77,0.15)}
+
+/* OVER-PERFORMANCE CHIP */
+.cc-over-chip{display:flex;align-items:center;justify-content:space-between;gap:4px;
+  background:rgba(255,152,0,0.07);border:1px solid rgba(255,152,0,0.22);
+  border-radius:4px;padding:3px 7px;
+  font-family:var(--fd);font-size:9px;font-weight:700;color:rgba(255,152,0,0.85)}
+.cc-over-note{font-family:var(--fb);font-size:8px;font-weight:400;
+  color:rgba(255,152,0,0.5);font-style:italic;flex-shrink:0}
+
+/* LEGEND */
+.chart-legend{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted)}
+.leg-bar{width:10px;height:10px;border-radius:2px;opacity:.7}
+.leg-avg{width:14px;height:2px;background-image:repeating-linear-gradient(90deg,var(--amber) 0,var(--amber) 4px,transparent 4px,transparent 7px)}
+.leg-tgt{width:14px;height:2px;background-image:repeating-linear-gradient(90deg,var(--green) 0,var(--green) 2px,transparent 2px,transparent 5px)}
+
+/* APPRAISAL BOARD */
+#appraisal-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:14px 16px;overflow:hidden;transition:all .3s}
+.ap-toggle-row{display:flex;align-items:center;justify-content:space-between}
+.ap-toggle{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--teal);background:none;border:none;cursor:pointer;
+  display:flex;align-items:center;gap:5px}
+#ap-content{margin-top:12px}
+.ap-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+@media(max-width:1200px){.ap-grid{grid-template-columns:repeat(4,1fr)}}
+.ap-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:5px}
+.ap-rank-badge{font-family:var(--fd);font-size:9px;font-weight:700;color:var(--muted)}
+.ap-tech-name{font-family:var(--fd);font-size:16px;font-weight:900;line-height:1;
+  color:#FFFFFF;text-shadow:0 1px 3px rgba(0,0,0,0.4)}
+.ap-pts-big{font-family:var(--fd);font-size:32px;font-weight:900;color:var(--teal);line-height:1;
+  text-shadow:0 2px 6px rgba(0,0,0,0.4)}
+.ap-pts-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.ap-bar-wrap{height:5px;background:rgba(0,200,230,0.1);border-radius:3px;overflow:hidden;margin-top:2px}
+.ap-bar-fill{height:5px;border-radius:3px;transition:width 1s ease}
+.ap-wk-row{font-size:9px;color:var(--muted);display:flex;justify-content:space-between;margin-top:2px}
+
+/* TV OVERLAY */
+#tv{display:none;position:fixed;inset:0;z-index:500;background:var(--bg);flex-direction:column}
+#tv.on{display:flex}
+.tv-hdr{height:48px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;border-bottom:1px solid var(--border);flex-shrink:0}
+.tv-hdr-logo{display:flex;align-items:center;gap:8px}
+.tv-hdr-logo .lm{width:28px;height:28px;font-size:12px}
+.tv-hdr-logo span{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text)}
+.tv-hdr-clock{font-family:var(--fd);font-size:22px;font-weight:600;color:rgba(0,200,230,0.35);letter-spacing:1px}
+.tv-exit-btn{background:none;border:1px solid var(--border);color:var(--muted);
+  font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  padding:5px 12px;border-radius:6px;cursor:pointer;transition:all .2s}
+.tv-exit-btn:hover{color:var(--text);border-color:rgba(0,200,230,0.35)}
+#tv-progress{height:3px;background:rgba(0,200,230,0.1);flex-shrink:0}
+#tv-bar{height:3px;background:var(--teal);width:0;transition:none}
+.tv-body{flex:1;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:20px 40px}
+/* panels */
+.tv-panel{display:none;flex-direction:column;align-items:center;justify-content:center;
+  width:100%;height:100%;gap:16px;text-align:center}
+.tv-panel.show{display:flex}
+/* champion panel */
+.tv-c-crown{font-size:64px;animation:float 3s ease-in-out infinite;margin-bottom:-10px}
+.tv-c-av{width:140px;height:140px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:54px;font-weight:900;
+  border:4px solid var(--teal);
+  box-shadow:0 0 0 8px rgba(0,200,230,0.08),0 0 60px rgba(0,200,230,0.25)}
+.tv-c-eyebrow{font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:4px;
+  text-transform:uppercase;color:rgba(0,200,230,0.55)}
+.tv-c-name{font-family:var(--fd);font-weight:900;letter-spacing:8px;text-transform:uppercase;
+  font-size:clamp(50px,10vw,110px);line-height:1;
+  background:linear-gradient(135deg,#fff 40%,rgba(0,200,230,0.6));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tv-c-stats{display:flex;gap:14px;margin-top:8px}
+.tv-c-stat{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:14px 22px;display:flex;flex-direction:column;align-items:center;gap:3px}
+.tv-c-val{font-family:var(--fd);font-size:42px;font-weight:900;line-height:1}
+.tv-c-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+/* tech panel */
+.tv-t-av{width:100px;height:100px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:38px;font-weight:900;
+  border:3px solid var(--teal);box-shadow:0 0 40px rgba(0,200,230,0.2)}
+.tv-t-name{font-family:var(--fd);font-weight:900;letter-spacing:6px;text-transform:uppercase;
+  font-size:clamp(36px,7vw,80px);line-height:1}
+.tv-t-stats{display:flex;gap:10px}
+.tv-t-stat{background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:10px 18px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tv-t-val{font-family:var(--fd);font-size:32px;font-weight:900;line-height:1}
+.tv-t-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.tv-t-chart{width:min(500px,70vw);height:200px;position:relative}
+/* praise panel */
+.tv-p-title{font-family:var(--fd);font-size:28px;font-weight:900;letter-spacing:4px;
+  text-transform:uppercase;color:var(--teal)}
+.tv-p-grid{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:1100px}
+.tv-pc{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:18px;width:200px;display:flex;flex-direction:column;gap:7px;text-align:left}
+.tv-pc-stars{color:var(--amber);font-size:11px;letter-spacing:2px}
+.tv-pc-tech{font-family:var(--fd);font-size:22px;font-weight:800}
+.tv-pc-quote{font-size:12px;color:rgba(255,255,255,0.6);font-style:italic;line-height:1.5;flex:1}
+.tv-pc-cust{font-size:10px;color:var(--muted)}
+/* dots */
+.tv-dots{display:flex;justify-content:center;gap:6px;padding:10px 0;flex-shrink:0}
+.tv-dot{width:6px;height:6px;border-radius:50%;background:rgba(0,200,230,0.18);transition:all .3s}
+.tv-dot.act{background:var(--teal);transform:scale(1.4)}
+
+/* OVERRIDE MODAL */
+#ov-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);
+  z-index:600;align-items:center;justify-content:center}
+#ov-modal.open{display:flex}
+.ov-box{background:var(--surface);border:1px solid rgba(255,183,77,0.3);
+  border-radius:16px;padding:28px;width:340px;text-align:center}
+.ov-crown-icon{font-size:44px;animation:float 2s ease-in-out infinite}
+.ov-title{font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,183,77,0.6);margin-top:6px}
+.ov-av{width:68px;height:68px;border-radius:50%;margin:10px auto;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--fd);font-size:26px;font-weight:900;border:2px solid var(--amber)}
+.ov-name{font-family:var(--fd);font-size:34px;font-weight:900;text-transform:uppercase}
+.ov-note-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;
+  margin-top:14px;text-align:left}
+.ov-note{width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);font-family:var(--fb);font-size:12px;
+  padding:8px 10px;outline:none;resize:none;height:60px;margin-top:4px;
+  transition:border-color .2s}
+.ov-note:focus{border-color:rgba(255,183,77,0.35)}
+.ov-acts{display:flex;gap:8px;margin-top:16px}
+.ov-crown-btn{flex:1;background:linear-gradient(135deg,var(--amber),#F57C00);border:none;
+  color:#000;font-family:var(--fd);font-weight:900;font-size:14px;letter-spacing:1px;
+  padding:10px;border-radius:8px;cursor:pointer;text-transform:uppercase}
+.ov-cancel{background:none;border:1px solid var(--border);color:var(--muted);
+  font-family:var(--fd);font-size:13px;padding:10px 13px;border-radius:8px;cursor:pointer}
+
+/* ADD PRAISE MODAL */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);
+  z-index:300;align-items:center;justify-content:center}
 #modal.open{display:flex}
-.mbox{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;width:390px}
-.mtitle{font-size:17px;font-weight:700;color:var(--lteal);margin-bottom:12px}
-.mbox label{display:block;font-size:9px;color:var(--muted);margin-bottom:3px;margin-top:10px;
-  text-transform:uppercase;letter-spacing:0.5px}
-.mbox input,.mbox select,.mbox textarea{width:100%;background:var(--surface);
+.mbox{background:var(--surface);border:1px solid rgba(0,200,230,0.26);
+  border-radius:16px;padding:26px;width:385px}
+.m-title{font-family:var(--fd);font-size:22px;font-weight:900;color:var(--teal);margin-bottom:3px}
+.m-sub{font-size:10px;color:var(--muted);margin-bottom:16px}
+.mbox label{display:block;font-size:9px;color:var(--muted);margin-top:12px;margin-bottom:3px;
+  text-transform:uppercase;letter-spacing:1.5px}
+.mbox input,.mbox select,.mbox textarea{width:100%;background:var(--card);
   border:1px solid var(--border);border-radius:7px;color:var(--text);
-  font-family:inherit;font-size:12px;padding:7px 10px}
-.mbox textarea{height:70px;resize:none}
-.star-row{display:flex;gap:5px;margin:5px 0}
-.sbtn{background:none;border:none;font-size:22px;cursor:pointer;opacity:0.2;color:var(--gold)}
+  font-family:var(--fb);font-size:13px;padding:8px 11px;outline:none;transition:border-color .2s}
+.mbox input:focus,.mbox textarea:focus{border-color:rgba(0,200,230,0.38)}
+.mbox textarea{height:72px;resize:none}
+.star-row{display:flex;gap:5px;margin:6px 0}
+.sbtn{background:none;border:none;font-size:24px;cursor:pointer;opacity:.16;
+  color:var(--amber);transition:opacity .15s,transform .15s}
 .sbtn.on{opacity:1}
-.macts{display:flex;gap:8px;margin-top:12px}
-.btn-save{flex:1;background:var(--teal);border:none;color:#fff;font-family:inherit;
-  font-weight:600;font-size:12px;padding:9px;border-radius:7px;cursor:pointer}
+.sbtn:hover{transform:scale(1.2)}
+.macts{display:flex;gap:8px;margin-top:18px}
+.btn-save{flex:1;background:linear-gradient(135deg,var(--teal),var(--blue));border:none;color:#fff;
+  font-family:var(--fd);font-weight:900;font-size:14px;letter-spacing:1.5px;
+  padding:10px;border-radius:8px;cursor:pointer;text-transform:uppercase}
 .btn-cancel{background:none;border:1px solid var(--border);color:var(--muted);
-  font-family:inherit;font-size:12px;padding:9px 12px;border-radius:7px;cursor:pointer}
+  font-family:var(--fd);font-size:13px;padding:10px 13px;border-radius:8px;cursor:pointer}
+
+/* BREAKDOWN PANEL */
+#breakdown-panel{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.bp-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media(max-width:1300px){.bp-grid{grid-template-columns:repeat(3,1fr)}} @media(max-width:700px){.bp-grid{grid-template-columns:1fr 1fr}}
+.bp-pillar{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:13px 15px}
+.bp-pillar-icon{font-size:22px;margin-bottom:5px}
+.bp-pillar-title{font-family:var(--fd);font-size:15px;font-weight:900;line-height:1;margin-bottom:4px}
+.bp-pillar-pts{font-family:var(--fd);font-size:28px;font-weight:900;color:var(--teal);line-height:1}
+.bp-pillar-max{font-size:9px;color:var(--muted);margin-bottom:6px}
+.bp-pillar-body{font-size:11px;color:rgba(255,255,255,0.65);line-height:1.6}
+.bp-pillar-formula{font-family:var(--fd);font-size:11px;font-weight:700;
+  color:var(--teal);margin-top:6px;padding:4px 8px;
+  background:rgba(0,200,230,0.08);border-radius:4px;display:inline-block}
+.bp-roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+@media(max-width:800px){.bp-roles{grid-template-columns:1fr 1fr}}
+.bp-role-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;display:flex;flex-direction:column;gap:3px}
+.bp-role-name{font-family:var(--fd);font-size:14px;font-weight:800;line-height:1}
+.bp-role-type{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.bp-role-tgt{font-size:10px;color:var(--text);margin-top:2px}
+.bp-role-pts{font-family:var(--fd);font-size:11px;font-weight:700;color:var(--teal)}
+.bp-example{background:rgba(0,200,230,0.05);border:1px solid rgba(0,200,230,0.12);
+  border-radius:8px;padding:12px 14px}
+.bp-ex-title{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.bp-ex-rows{display:flex;flex-direction:column;gap:4px}
+.bp-ex-row{display:flex;align-items:center;gap:8px;font-size:11px}
+.bp-ex-lbl{color:rgba(255,255,255,0.5);flex:1}
+.bp-ex-calc{font-family:var(--fd);font-size:12px;font-weight:700;color:var(--text)}
+.bp-ex-pts{font-family:var(--fd);font-size:13px;font-weight:900;color:var(--teal);min-width:40px;text-align:right}
+.bp-ex-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+.bp-ex-total{font-family:var(--fd);font-size:15px;font-weight:900;color:var(--teal)}
+
+/* AWARD STYLES */
+.award-open-btn{
+  background:linear-gradient(135deg,rgba(255,183,77,0.15),rgba(230,81,0,0.12));
+  border:1px solid rgba(255,183,77,0.3);color:var(--amber);
+  font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;padding:4px 12px;border-radius:6px;cursor:pointer;transition:all .2s}
+.award-open-btn:hover{background:rgba(255,183,77,0.25);border-color:rgba(255,183,77,0.5)}
+.award-card{flex:0 0 210px;background:var(--card);border-radius:10px;border:1px solid rgba(0,200,230,0.18);
+  padding:12px 14px;display:flex;flex-direction:column;gap:5px;
+  transition:border-color .25s,transform .2s}
+.award-card.management{border:1px solid rgba(255,183,77,0.45);
+  background:linear-gradient(140deg,rgba(255,183,77,0.07),var(--card) 60%)}
+.award-card.staff{border:1px solid rgba(129,199,132,0.35);
+  background:linear-gradient(140deg,rgba(129,199,132,0.05),var(--card) 60%)}
+.aw-cat-chip{display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--fd);font-size:9px;font-weight:800;letter-spacing:1px;
+  text-transform:uppercase;padding:2px 7px;border-radius:3px;margin-bottom:3px}
+.aw-tech-name{font-family:var(--fd);font-size:16px;font-weight:800;line-height:1;
+  color:#FFFFFF;text-shadow:0 1px 3px rgba(0,0,0,0.4)}
+.aw-note-text{font-size:10px;color:rgba(220,240,248,0.72);line-height:1.45;font-style:italic;flex:1}
+.aw-footer{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+.aw-pts-badge{font-family:var(--fd);font-size:11px;font-weight:900;
+  color:var(--amber);background:rgba(255,183,77,0.1);
+  border:1px solid rgba(255,183,77,0.22);padding:1px 7px;border-radius:3px}
+/* Award category radio buttons */
+.aw-cat-option{display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:7px;
+  padding:8px 12px;cursor:pointer;transition:all .2s;user-select:none}
+.aw-cat-option:hover{border-color:rgba(255,183,77,0.35);background:rgba(255,183,77,0.05)}
+.aw-cat-option.selected{border-color:rgba(255,183,77,0.6);background:rgba(255,183,77,0.08)}
+.aw-cat-option input{display:none}
+.aw-cat-label{flex:1}
+.aw-cat-name{font-family:var(--fd);font-size:14px;font-weight:800;line-height:1}
+.aw-cat-desc{font-size:9px;color:var(--muted);margin-top:2px}
+.aw-cat-pts{font-family:var(--fd);font-size:18px;font-weight:900;color:var(--amber);flex-shrink:0}
+/* Appraisal breakdown */
+.ap-breakdown{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:6px}
+.ap-bk{display:flex;flex-direction:column;align-items:center;
+  background:rgba(0,200,230,0.05);border-radius:4px;padding:4px}
+.ap-bk-v{font-family:var(--fd);font-size:12px;font-weight:900;line-height:1}
+.ap-bk-l{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+
+/* ERR */
+#err-bar{display:none;margin:0 18px;background:rgba(239,83,80,0.07);
+  border:1px solid rgba(239,83,80,0.18);border-radius:7px;padding:8px 13px;font-size:10px;color:#FF8888}
+
+footer{padding:12px 18px;display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border)}
+.foot-note{font-size:10px;color:var(--muted);line-height:1.7}
+#updated-at{font-size:10px;color:rgba(0,200,230,0.28)}
 </style>
 </head>
 <body>
-<div id="app">
 
-<header>
-  <div class="logo">
-    <div class="logo-mark">SS</div>
-    <div class="logo-text">Superior Support <span>Performance Centre</span></div>
-  </div>
-  <div class="rev-strip">
-    <div class="rev-top">
-      <span style="display:flex;align-items:center;gap:8px">
-        <span id="perf-icon" style="font-size:22px;line-height:1;flex-shrink:0"></span>
-        <span id="rev-heading">Team Revenue MTD vs Monthly Target</span>
-      </span>
-      <strong id="rev-label">Loading...</strong>
-    </div>
-    <div class="rev-track"><div class="rev-fill" id="rev-fill"></div></div>
-  </div>
-  <div class="hdr-r">
-    <span class="badge b-mtd" id="mtd-badge">Loading...</span>
-    <span class="badge b-mon" id="month-badge">—</span>
-    <span id="clock"></span>
-  </div>
-</header>
-
-<div id="main">
-
-  <!-- LEFT COLUMN: Utilisation + Jobs -->
-  <div class="col">
-    <div class="panel">
-      <div class="p-title">📊 Billable Efficiency</div>
-      <div class="p-sub" id="c1-sub">Billable hrs as % of total logged hrs per tech — all 3 months labelled. Green = ≥80% · Gold = ≥60% · Red = below. Sorted alphabetically.</div>
-      <div class="chart-wrap"><canvas id="c1"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="p-title">🔍 Total Job Oversight</div>
-      <div class="p-sub">Bars = total jobs per tech across 3 months (faded → bright). 🟡 Line = current month revenue % contribution to team total — green ≥12% · gold ≥8% · red below. Sorted alphabetically.</div>
-      <div class="chart-wrap"><canvas id="c2"></canvas></div>
-    </div>
-  </div>
-
-  <!-- RIGHT COLUMN: Avg Hrs/Day + Revenue -->
-  <div class="col">
-    <div class="panel">
-      <div class="p-title">📋 Labour Categories</div>
-      <div class="p-sub" id="c3-sub">Hours per tech by category — previous month (faded) vs current month (bright), side by side. Values labelled in each segment. Sorted alphabetically.</div>
-      <div class="chart-wrap"><canvas id="c3"></canvas></div>
-    </div>
-    <div class="panel">
-      <div class="p-title">💰 Revenue Generated MTD</div>
-      <div class="p-sub">Team revenue 3-month trend — stacked: <span style="color:#00ACC1;font-weight:600">Teal = Adhoc/Callout</span> + <span style="color:#00C853;font-weight:600">Green = SLA Recurring</span>. Gold dashed line = monthly target. Teal dashed line = MTD pace.</div>
-      <div class="chart-wrap"><canvas id="c4"></canvas></div>
-    </div>
-  </div>
-
-  <!-- RIGHT PANEL: SS Recognition -->
-  <div id="praise-panel">
-    <div class="p-title" style="font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--lteal)">⭐ SS Recognition</div>
-    <div id="praise-feed" style="display:flex;flex-direction:column;gap:6px;overflow:hidden;flex:1"></div>
-    <button class="add-btn" onclick="openModal()">+ Add Customer Feedback</button>
-  </div>
-
+<div id="loading">
+  <div class="ring"></div>
+  <div class="load-txt">Loading Scoreboard…</div>
 </div>
 
-<!-- BOTTOM: Tech at a glance -->
-<!-- Each pill shows: NAME | UTIL% | JOBS | AVG HRS/DAY | REVENUE MTD | MoM trend -->
-<div id="bottom" role="list" aria-label="Technician summary"></div>
-
+<!-- TV OVERLAY -->
+<div id="tv">
+  <div class="tv-hdr">
+    <div class="tv-hdr-logo">
+      <div class="lm">SS</div>
+      <span>Superior Support</span>
+    </div>
+    <div id="tv-hdr-title" style="font-family:'Barlow Condensed';font-size:16px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--teal)">Performance Board</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="tv-hdr-clock" id="tv-clock"></div>
+      <button class="tv-exit-btn" onclick="exitTV()">✕ Exit</button>
+    </div>
+  </div>
+  <div id="tv-progress"><div id="tv-bar"></div></div>
+  <div class="tv-body">
+    <!-- Champion panel -->
+    <div id="tv-champ" class="tv-panel">
+      <div class="tv-c-crown">👑</div>
+      <div class="tv-c-av" id="tv-c-av"></div>
+      <div class="tv-c-eyebrow">Weekly Champion — <span id="tv-c-period"></span></div>
+      <div class="tv-c-name" id="tv-c-name"></div>
+      <div class="tv-c-stats" id="tv-c-stats"></div>
+    </div>
+    <!-- Tech panel -->
+    <div id="tv-tech" class="tv-panel">
+      <div class="tv-t-av" id="tv-t-av"></div>
+      <div class="tv-t-name" id="tv-t-name"></div>
+      <div class="tv-t-stats" id="tv-t-stats"></div>
+      <div class="tv-t-chart"><canvas id="tv-chart-canvas"></canvas></div>
+    </div>
+    <!-- Praise panel -->
+    <div id="tv-praise" class="tv-panel">
+      <div class="tv-p-title">⭐ Recognition Wall</div>
+      <div class="tv-p-grid" id="tv-praise-grid"></div>
+    </div>
+  </div>
+  <div class="tv-dots" id="tv-dots"></div>
 </div>
 
-<!-- MODAL -->
+<!-- OVERRIDE MODAL -->
+<div id="ov-modal">
+  <div class="ov-box">
+    <div class="ov-crown-icon">👑</div>
+    <div class="ov-title">Crown as Weekly Champion</div>
+    <div class="ov-av" id="ov-av"></div>
+    <div class="ov-name" id="ov-name"></div>
+    <div class="ov-note-lbl">Optional note (e.g. reason for crowning)</div>
+    <textarea class="ov-note" id="ov-note" placeholder="Outstanding effort this week…"></textarea>
+    <div class="ov-acts">
+      <button class="ov-cancel" onclick="closeOverride()">Cancel</button>
+      <button class="ov-crown-btn" onclick="confirmOverride()">👑 Crown</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF AWARD MODAL -->
+<div id="award-modal" role="dialog" aria-modal="true" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;align-items:center;justify-content:center">
+  <div class="mbox" style="width:420px">
+    <div class="m-title" style="color:var(--amber)">🏅 Give a Recognition Award</div>
+    <div class="m-sub">Recognise a colleague for exceptional work · you cannot award yourself</div>
+    <label>Your Name</label>
+    <select id="aw-giver"></select>
+    <label>Recognising</label>
+    <select id="aw-tech"></select>
+    <label>Award Category</label>
+    <div id="aw-cats" style="display:flex;flex-direction:column;gap:6px;margin-top:6px"></div>
+    <label>Note <span style="opacity:.4;font-weight:400">(required)</span></label>
+    <textarea id="aw-note" class="mbox" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--fb);font-size:13px;padding:8px 11px;outline:none;resize:none;height:70px;margin-top:4px" placeholder="What did they do? Be specific…"></textarea>
+    <div class="macts">
+      <button class="btn-cancel" onclick="closeAwardModal()">Cancel</button>
+      <button class="btn-save" style="background:linear-gradient(135deg,var(--amber),#E65100)" onclick="submitAward()">Give Award</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD PRAISE MODAL -->
 <div id="modal" role="dialog" aria-modal="true">
   <div class="mbox">
-    <div class="mtitle">Add Customer Feedback</div>
-    <label>Technician</label><select id="m-tech"></select>
-    <label>Customer</label><input id="m-cust" type="text" placeholder="Company / Contact name">
-    <label>Rating</label>
+    <div class="m-title">Add Customer Feedback</div>
+    <div class="m-sub">Saved to workbook · appears on the Recognition Wall</div>
+    <label>Technician</label>
+    <select id="m-tech"></select>
+    <label>Customer Name</label>
+    <input id="m-cust" type="text" placeholder="Company / Contact">
+    <label>Star Rating</label>
     <div class="star-row">
       <button class="sbtn on" onclick="setStar(1)">★</button>
       <button class="sbtn on" onclick="setStar(2)">★</button>
@@ -212,1009 +543,1186 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   </div>
 </div>
 
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+<header>
+  <div class="logo">
+    <div class="lm">SS</div>
+    <div class="ln">Superior Support <em>Tech Scoreboard</em></div>
+  </div>
+  <div class="hdr-mid">Performance Board</div>
+  <div class="hdr-r">
+    <span id="period-badge">—</span>
+    <span id="source-badge" style="font-family:var(--fd);font-size:9px;font-weight:700;
+      letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;
+      border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3)">—</span>
+    <button class="tv-btn" onclick="enterTV()" title="Display mode">📺 TV Mode</button>
+    <button class="icon-btn" onclick="loadData()" title="Refresh">↻</button>
+    <span id="clock"></span>
+  </div>
+</header>
+
+<div id="err-bar"></div>
+<div id="page">
+
+  <!-- UNIFIED RECOGNITION WALL -->
+  <section>
+    <div class="sec-hd">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="sec-lbl">⭐ Customer Feedback</div>
+        <div style="width:1px;height:12px;background:var(--border)"></div>
+        <div class="sec-lbl">🏅 Staff &amp; Management Recognition</div>
+      </div>
+      <button class="award-open-btn" onclick="openAwardModal()">＋ Give an Award</button>
+    </div>
+    <div class="praise-row" id="recognition-row"></div>
+  </section>
+
+  <!-- WEEKLY CHAMPION -->
+  <section>
+    <div class="sec-hd">
+      <div class="sec-lbl">👑 Weekly Champion</div>
+      <div class="sec-note">Util (40pts) + Job rate vs role target (40pts) + Recognition × 5pts · Logged for performance appraisals · <span id="override-status" style="color:var(--amber)"></span></div>
+    </div>
+    <div id="spotlight">
+      <div class="sp-crown">👑</div>
+      <div class="sp-av" id="sp-av">—</div>
+      <div class="sp-info">
+        <div class="sp-label">Weekly Champion — <span id="sp-period">—</span></div>
+        <div class="sp-name" id="sp-name">—</div>
+        <div id="mgr-badge-wrap"></div>
+      </div>
+      <div class="sp-div"></div>
+      <div class="sp-stat"><div class="sp-val" id="sp-util">—</div><div class="sp-lbl">Utilisation</div></div>
+      <div class="sp-div"></div>
+      <div class="sp-stat"><div class="sp-val" id="sp-jobs" style="color:var(--teal)">—</div><div class="sp-lbl">Jobs</div></div>
+      <div class="sp-div"></div>
+      <div class="sp-stat"><div class="sp-val" id="sp-praise-c" style="color:var(--amber)">—</div><div class="sp-lbl">Recognitions</div></div>
+      <div class="sp-pts">
+        <div class="sp-pts-v" id="sp-pts">—</div>
+        <div class="sp-pts-l">Performance Pts</div>
+        <div class="sp-pts-note">Util×0.5 · Jobs×0.3 · Praise×10</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH CHARTS -->
+  <section>
+    <div class="sec-hd">
+      <div class="sec-lbl">📊 Weekly Billable Hours — All Technicians</div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-bar" style="background:var(--teal)"></div>Billable Hrs</div>
+        <div class="leg-item"><div class="leg-avg"></div>3-Wk Avg</div>
+        <div class="leg-item"><div class="leg-tgt"></div>▲ Target</div>
+        <div class="leg-item" style="color:rgba(0,200,230,0.5);font-size:9px">👑 hover to crown</div>
+      </div>
+    </div>
+    <div id="chart-grid"></div>
+  </section>
+
+  <!-- SCORING BREAKDOWN PANEL -->
+  <section>
+    <div class="sec-hd">
+      <div class="sec-lbl">📐 How Performance Points Are Scored</div>
+      <div class="sec-note">Transparent scoring — every technician knows exactly how they're measured</div>
+    </div>
+    <div id="breakdown-panel">
+      <!-- toggle row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0;cursor:pointer"
+           onclick="toggleBreakdown()">
+        <div style="font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2px;
+          text-transform:uppercase;color:var(--muted)">Tap to expand scoring details</div>
+        <button style="background:none;border:none;cursor:pointer;font-family:var(--fd);
+          font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+          color:var(--teal);display:flex;align-items:center;gap:5px"
+          id="bp-toggle-btn">▸ Show</button>
+      </div>
+      <!-- collapsible content -->
+      <div id="bp-body" style="display:none">
+      <!-- 3 pillars -->
+      <div class="bp-grid">
+        <div class="bp-pillar">
+          <div class="bp-pillar-icon">⏱</div>
+          <div class="bp-pillar-title">Pillar 1 — Utilisation</div>
+          <div class="bp-pillar-pts">up to 25 pts</div>
+          <div class="bp-pillar-max">same target for all roles</div>
+          <div class="bp-pillar-body">Appointment hours vs daily target of <strong>6.5 hrs</strong>. Are you putting in the hours? Capped at 150%.</div>
+          <div class="bp-pillar-formula">(Appt hrs ÷ days ÷ 6.5) × 100 × 0.25</div>
+        </div>
+        <div class="bp-pillar">
+          <div class="bp-pillar-icon">✅</div>
+          <div class="bp-pillar-title">Pillar 2 — Job Rate</div>
+          <div class="bp-pillar-pts">up to 25 pts</div>
+          <div class="bp-pillar-max">role-adjusted daily target</div>
+          <div class="bp-pillar-body">Jobs vs role target — <strong>Field 5/day</strong>, <strong>Mixed 7/day</strong>, <strong>Inhouse 10/day</strong>. Equal footing for all.</div>
+          <div class="bp-pillar-formula">(Jobs ÷ days ÷ role target) × 100 × 0.25</div>
+        </div>
+        <div class="bp-pillar">
+          <div class="bp-pillar-icon">💰</div>
+          <div class="bp-pillar-title">Pillar 3 — Billability</div>
+          <div class="bp-pillar-pts">up to 20 pts</div>
+          <div class="bp-pillar-max">quality of time — new pillar</div>
+          <div class="bp-pillar-body">What % of appt hours are <strong>client-billable</strong>? SLA, SS Time and no-charge don't count. Rewards efficient revenue-generating work.</div>
+          <div class="bp-pillar-formula">(Billable hrs ÷ Appt hrs) × 100 × 0.20</div>
+        </div>
+        <div class="bp-pillar">
+          <div class="bp-pillar-icon">📈</div>
+          <div class="bp-pillar-title">Pillar 4 — Consistency</div>
+          <div class="bp-pillar-pts">up to 15 pts</div>
+          <div class="bp-pillar-max">3-week variance — new pillar</div>
+          <div class="bp-pillar-body">Low variance in utilisation across 3 weeks = high score. <strong>80% every week</strong> beats alternating 110% and 50%.</div>
+          <div class="bp-pillar-formula">max(0, 1 − stdev/40) × 15</div>
+        </div>
+        <div class="bp-pillar">
+          <div class="bp-pillar-icon">⭐</div>
+          <div class="bp-pillar-title">Pillar 5 — Recognition</div>
+          <div class="bp-pillar-pts">15 pts + bonus</div>
+          <div class="bp-pillar-max">uncapped above 15pt pillar</div>
+          <div class="bp-pillar-body">Customer praise = <strong>5 pts</strong>. Staff awards at face value. First 15 pts = pillar. Beyond 15 = uncapped bonus that can tip the weekly result.</div>
+          <div class="bp-pillar-formula">Praise×5 + Awards (15 pillar + bonus)</div>
+        </div>
+      </div>
+      <!-- Role targets -->
+      <div>
+        <div style="font-family:var(--fd);font-size:9px;font-weight:700;letter-spacing:2px;
+          text-transform:uppercase;color:var(--muted);margin-bottom:8px">
+          Role Targets — Jobs Per Day
+        </div>
+        <div class="bp-roles" id="bp-roles"></div>
+      </div>
+
+      <!-- Worked example -->
+      <div class="bp-example">
+        <div class="bp-ex-title">📊 Worked Example — Field Tech, 5-Day Week</div>
+        <div class="bp-ex-rows">
+          <div class="bp-ex-row">
+            <span class="bp-ex-lbl">Utilisation: 28h logged ÷ (5 days × 6.5h) = 86%</span>
+            <span class="bp-ex-calc">86 × 0.40</span>
+            <span class="bp-ex-pts">34 pts</span>
+          </div>
+          <div class="bp-ex-row">
+            <span class="bp-ex-lbl">Jobs: 22 completed ÷ (5 days × 5 target) = 88%</span>
+            <span class="bp-ex-calc">88 × 0.40</span>
+            <span class="bp-ex-pts">35 pts</span>
+          </div>
+          <div class="bp-ex-row">
+            <span class="bp-ex-lbl">Recognition: 2 customer feedback entries</span>
+            <span class="bp-ex-calc">2 × 5</span>
+            <span class="bp-ex-pts">10 pts</span>
+          </div>
+          <hr class="bp-ex-divider">
+          <div class="bp-ex-row">
+            <span class="bp-ex-lbl" style="color:var(--text);font-weight:600">Weekly Total</span>
+            <span class="bp-ex-calc"></span>
+            <span class="bp-ex-total">79 pts</span>
+          </div>
+        </div>
+      </div>
+    </div><!-- /bp-body -->
+  </section>
+
+  <!-- APPRAISAL BOARD -->
+  <section>
+    <div id="appraisal-wrap">
+      <div class="ap-toggle-row">
+        <div class="sec-lbl">📈 YTD Performance Appraisal Log</div>
+        <button class="ap-toggle" onclick="toggleAppraisal()">
+          <span id="ap-arrow">▸</span> <span id="ap-toggle-lbl">Show Board</span>
+        </button>
+      </div>
+      <div id="ap-content" style="display:none">
+        <div class="ap-grid" id="ap-grid" style="margin-top:12px"></div>
+        <div style="margin-top:10px;font-size:9px;color:var(--muted)">
+          Points auto-saved each week · Scores accumulate YTD · Resets 1 Jan
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+<footer>
+  <div class="foot-note">
+    Active: Ashley · David · Jarryd · Mondre · Naeem · Raees · Riedhor ·
+    Target = 6.5 h/day · <span style="color:var(--green)">≥80%</span> ·
+    <span style="color:var(--amber)">≥60%</span> · <span style="color:var(--red)">&lt;60%</span> · Refreshes every 5 min
+  </div>
+  <div id="updated-at"></div>
+</footer>
+</div>
+
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
+/* ─── CONFIG ───────────────────────────────────────── */
 const API_URL        = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/dashboard-data';
+const WEEKLY_API_URL = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/weekly-data';
 const ADD_PRAISE_URL = 'https://tech-dashboard-api-dmdvb9hvd9dnhqh7.southafricanorth-01.azurewebsites.net/api/add-praise';
 
-const TECHS    = ['Ashley','David','Jarryd','Mondre','Naeem','Raees','Riedhor'];
-const INITIALS = {Ashley:'AS',David:'DA',Jarryd:'JA',Mondre:'MO',Naeem:'NA',Raees:'RA',Riedhor:'RH'};
-const COLORS   = ['#0891B2','#DC2626','#7C3AED','#00838F','#2563EB','#16A34A','#00ACC1'];
-const COLOR    = t => COLORS[TECHS.indexOf(t)] || '#607D8B';
+const PRAISE_PEOPLE = ['Ashley','David','Jarryd','Mondre','Naeem','Raees','Riedhor',
+  'Tracy','Merle','Anees','Melissa','Ferial','Ian'];
+const ACTIVE_TECHS  = ['Ashley','David','Jarryd','Mondre','Naeem','Raees','Riedhor'];
 
-const PRAISE_PEOPLE = [
-  'Aristo','Ashley','Bryon','Chris','David','Jarryd','Mondre','Naeem','Raees','Richard','Riedhor',
-  'Tracy','Merle','Anees','Melissa','Ferial','Ian'
-];
-
-const DAILY_TARGET  = 6.5;
-const WORK_DAYS_MAP = {'Feb 2026':20,'Mar 2026':22,'Apr 2026':20,'May 2026':21,'Jun 2026':21};
-
-let MONTHS          = ['Mar 2026','Apr 2026','May 2026']; // always last 3 — updated by API
-let WORK_DAYS_DONE  = 14;
-let WORK_DAYS_MONTH = 20;
-let REV_TARGET      = 300000;
-// Historical targets per month — update from Targets sheet via API
-const MONTH_TARGETS = {'Feb 2026':280000,'Mar 2026':280000,'Apr 2026':300000,'May 2026':300000};
-
-// SLA Recurring revenue per month (read from API, fallback hardcoded)
-let SLA_REVENUE = {'Mar 2026':85000,'Apr 2026':92000,'May 2026':92000};
-let SLA_PREV    = 85000;
-let SLA_CURR    = 92000;
-// Adhoc team totals per month (updated from API adhoc3 array)
-let ADHOC3 = [0, 0, 0];
-
-// ── FALLBACK DATA — 3 months [0]=Feb [1]=Mar [2]=Apr ─────────────────────────
-let TD = {
-  // [Mar, Apr, May]  appt=total appt hrs, billable=LAB02+09+12, slaHrs=LAB05, ssTime=LAB08, noCharge=LAB03
-  Ashley:  {appt:[140.2,93.26,0],  jobs:[84,79,0],  cost:[46821,32767,0], travel:[43.8,97.45,0],  billable:[102.75,73.15,0], slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[2.5,1.5,0]},
-  David:   {appt:[98.1,92.37,0],   jobs:[70,68,0],  cost:[31237,29600,0], travel:[92.1,368.18,0], billable:[63.45,61,0],     slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
-  Jarryd:  {appt:[43,61.57,0],     jobs:[61,50,0],  cost:[8836,12357,0],  travel:[50.35,33,0],    billable:[38.4,35,0],      slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
-  Mondre:  {appt:[94.24,82.45,0],  jobs:[160,152,0],cost:[40830,28617,0], travel:[7.4,2,0],       billable:[75.5,64,0],      slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[1,0.5,0]},
-  Naeem:   {appt:[115.34,105.43,0],jobs:[78,64,0],  cost:[43227,39482,0], travel:[44.4,36.2,0],   billable:[105.5,93.3,0],   slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
-  Raees:   {appt:[136.55,100.25,0],jobs:[136,115,0],cost:[37922,21990,0], travel:[2.19,1.1,0],    billable:[78.35,59.5,0],   slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
-  Riedhor: {appt:[108,103.55,0],   jobs:[112,130,0],cost:[27103,40860,0], travel:[23.59,20.25,0], billable:[60.75,90.25,0],  slaHrs:[0,0,0],   ssTime:[0,0,0],   noCharge:[0,0,0]},
+// ── ROLE CONFIG ─────────────────────────────────────────────
+// type: 'field' | 'remote' | 'mixed'
+// jobTarget: daily job minimum for scoring
+// Field = on-road, min 5 jobs/day
+// Remote = inhouse, min 10 jobs/day  
+// Mixed = blend of both, 7 jobs/day
+const ROLES = {
+  Ashley: { type:'field',  jobTarget:5,  label:'Field',        color:'#00C8E6' },
+  David:  { type:'field',  jobTarget:5,  label:'Field',        color:'#0288D1' },
+  Jarryd: { type:'mixed',  jobTarget:7,  label:'Field/Inhouse',color:'#0097A7' },
+  Mondre: { type:'remote', jobTarget:10, label:'Inhouse',      color:'#006064' },
+  Naeem:  { type:'field',  jobTarget:5,  label:'Field',        color:'#01579B' },
+  Raees:  { type:'remote', jobTarget:10, label:'Inhouse',      color:'#1565C0' },
+  Riedhor:{ type:'mixed',  jobTarget:7,  label:'Field/Inhouse',color:'#1976D2' },
 };
+const tColor  = t => (ROLES[t]||{}).color||'#00C8E6';
+const tRole   = t => ROLES[t]||{type:'field',jobTarget:5,label:'Field',color:'#00C8E6'};
 
-let PRAISE = [
-  {tech:'Naeem',  customer:'Blue Label Telecoms',stars:5,text:'Naeem resolved our server issue in record time. Absolutely professional.',date:'14 Apr'},
-  {tech:'Riedhor',customer:'Grapevine Trading',  stars:5,text:'Riedhor went above and beyond to get our systems back online.',date:'11 Apr'},
-  {tech:'Ashley', customer:'Cape Timber Co.',    stars:5,text:'Extremely efficient. Had our network sorted within the hour.',date:'9 Apr'},
-  {tech:'Raees',  customer:'ACSA Logistics',     stars:4,text:'Great service. On-site quickly and fixed the issue on first visit.',date:'7 Apr'},
-  {tech:'Mondre', customer:'Konica Minolta SA',  stars:5,text:"Mondre's attitude and knowledge is always top-class.",date:'3 Apr'},
+// ── SCORING FORMULA ──────────────────────────────────────────
+// 3 pillars, all normalised 0-100 then weighted:
+//   Utilisation %  (appt hrs ÷ target hrs)          × 0.40  → max 40 pts
+// ── SCORING WEIGHTS — 5 balanced pillars, 100 base pts max ─────
+// P1 Utilisation      25 pts max  — capped at 100% for scoring
+// P2 Job Rate         25 pts max  — role-adjusted, capped at 100%
+// P3 Billability      20 pts max  — billable hrs / appt hrs
+// P4 Consistency      15 pts max  — low 3-week variance
+// P5 Recognition      15 pts pillar + uncapped bonus
+// Over-performance (>100%) tracked separately as 🔥 indicator, not scored
+const W_UTIL     = 0.25;
+const W_JOBS     = 0.25;
+const W_BILL     = 0.20;
+const W_CONSIST  = 15;
+const W_RECOG    = 15;   // pillar max
+const W_PRAISE   = 5;    // pts per customer praise entry
+
+// ── STAFF AWARD CATEGORIES ──────────────────────────
+const MANAGERS = ['Chris','Bryon','Aristo'];
+const AWARD_CATS = [
+  { id:'extra_mile',  label:'🌟 Extra Mile',            pts:8,  desc:'Went beyond what was asked'             },
+  { id:'initiative',  label:'💡 Initiative',             pts:6,  desc:'Spotted & solved a problem unprompted'  },
+  { id:'team',        label:'🤝 Team Contribution',      pts:5,  desc:'Helped a colleague / knowledge sharing'  },
+  { id:'service',     label:'🏆 Superior Service',       pts:10, desc:'Delivered exceptional customer outcome'  },
+  { id:'management',  label:'👑 Management Commendation',pts:15, desc:'Management only — highest recognition',
+    managerOnly:true },
 ];
+const AWARD_KEY = 'ss_awards_v1';
+const DAILY_TGT = 6.5;
 
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-const fmtR = v => 'R\u202F'+Math.round(v).toLocaleString('en-ZA');
+function calcScore(tech, techData, praiseArr, workdays, awardsArr, weekHistory) {
+  const v    = techData || {};
+  const role = tRole(tech);
+  const wd   = workdays || 5;
 
-function billPct(tech, mi) {
-  const appt  = (TD[tech].appt||[])[mi]||0;
-  const month = MONTHS[mi];
-  const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
-  const avail = wd * DAILY_TARGET;
-  return avail>0 ? Math.round(appt/avail*100) : 0;
-}
+  // ── P1: Utilisation — capped at 100% for score, tracked above ───────
+  const utilRaw  = wd > 0 ? (v.appt||0) / (wd * DAILY_TGT) * 100 : 0;
+  const utilPct  = Math.min(utilRaw, 100);
+  const utilOver = Math.max(0, utilRaw - 100);
+  const utilPts  = Math.round(utilPct * W_UTIL);
 
-function avgHrs(tech, mi) {
-  const appt  = (TD[tech].appt||[])[mi]||0;
-  const month = MONTHS[mi];
-  const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
-  return wd>0 ? +(appt/wd).toFixed(2) : 0;
-}
+  // ── P2: Job rate — role-adjusted, capped at 100% for score ──────────
+  const jobsRaw  = wd > 0 ? (v.jobs||0) / (wd * role.jobTarget) * 100 : 0;
+  const jobsPct  = Math.min(jobsRaw, 100);
+  const jobsOver = Math.max(0, jobsRaw - 100);
+  const jobsPts  = Math.round(jobsPct * W_JOBS);
 
-function sortedBy(key, mi) {
-  return [...TECHS].sort((a,b)=>{
-    const va = key==='util'?billPct(a,mi):key==='avg'?avgHrs(a,mi):(TD[a][key]||[])[mi]||0;
-    const vb = key==='util'?billPct(b,mi):key==='avg'?avgHrs(b,mi):(TD[b][key]||[])[mi]||0;
-    return vb-va;
-  });
-}
+  // ── P3: Billability — billable hrs / appt hrs ────────────────────────
+  const billHrs = v.billable || 0;
+  const apptHrs = v.appt     || 0;
+  const billPct = apptHrs > 0 ? Math.min(billHrs / apptHrs * 100, 100) : 0;
+  const billPts = Math.round(billPct * W_BILL);
 
-// ── CHART THEME ───────────────────────────────────────────────────────────────
-const TIP  = {backgroundColor:'#0F1F3D',titleColor:'#E8F4FD',bodyColor:'#607D8B',
-              borderColor:'rgba(0,172,193,0.25)',borderWidth:1,padding:8};
-const GRID = {color:'rgba(0,172,193,0.06)'};
-const TX   = {color:'#607D8B',font:{size:10,weight:'600'},maxRotation:0,autoSkip:false};
-const TY   = {color:'#607D8B',font:{size:9}};
-const LEG  = {display:true,position:'top',labels:{color:'#607D8B',font:{size:9},boxWidth:8,padding:5}};
-const MC   = ['rgba(0,131,143,0.28)','rgba(0,131,143,0.5)','rgba(0,172,193,1)'];
+  // ── P4: Consistency — low variance in util over 3 weeks ─────────────
+  let consistPts = 8; // neutral default when no history
+  if (weekHistory && weekHistory.length >= 2) {
+    const utils = weekHistory
+      .map(wk => {
+        const td = (wk||{})[tech]||{};
+        return wd > 0 ? Math.min((td.appt||0)/(wd*DAILY_TGT)*100, 100) : 0;
+      })
+      .filter(u => u > 0);
+    if (utils.length >= 2) {
+      const mean  = utils.reduce((s,u)=>s+u,0) / utils.length;
+      const stdev = Math.sqrt(utils.map(u=>(u-mean)**2).reduce((s,u)=>s+u,0)/utils.length);
+      consistPts  = Math.round(Math.max(0, 1 - stdev/40) * W_CONSIST);
+    }
+  }
 
-let charts = {};
+  // ── P5: Recognition — pillar max 15, uncapped bonus above ────────────
+  const pc          = (praiseArr||[]).filter(p=>p.tech===tech).length;
+  const myAwards    = (awardsArr||[]).filter(a=>a.tech===tech);
+  const awardPts    = myAwards.reduce((s,a)=>s+(a.pts||0),0);
+  const awardCount  = myAwards.length;
+  const recognRaw   = pc * W_PRAISE + awardPts;
+  const recognPts   = Math.min(recognRaw, W_RECOG);
+  const recognBonus = Math.max(0, recognRaw - W_RECOG);
+  const praisePts   = recognPts + recognBonus;
 
-function dline(chart, val, color, label) {
-  const {ctx,chartArea:{left,right},scales:{y}} = chart;
-  const yp = y.getPixelForValue(val);
-  if (yp<chart.chartArea.top||yp>chart.chartArea.bottom) return;
-  ctx.save();
-  ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
-  ctx.beginPath();ctx.moveTo(left,yp);ctx.lineTo(right,yp);ctx.stroke();
-  ctx.setLineDash([]);ctx.fillStyle=color;ctx.font='600 9px sans-serif';
-  ctx.fillText(label,right-ctx.measureText(label).width-4,yp-3);
-  ctx.restore();
-}
+  // ── Over-performance flags (informational only — not scored) ─────────
+  const isOverUtil  = utilOver > 5;
+  const isOverJobs  = jobsOver > 10;
 
-// ── SHARED HELPERS (used by buildCharts, buildPills, updateHeader) ─────────────
-function totalLogged(tech, mi) {
-  const keys = ['billable','slaHrs','ssTime','noCharge'];
-  return keys.reduce((s,k) => s + ((TD[tech][k]||[])[mi]||0), 0);
-}
+  const total = utilPts + jobsPts + billPts + consistPts + recognPts + recognBonus;
 
-function billablePctLogged(tech, mi) {
-  const b   = (TD[tech].billable||[])[mi]||0;
-  const tot = totalLogged(tech, mi);
-  if (tot > 0) return Math.round(b / tot * 100);
-  const appt  = (TD[tech].appt||[])[mi]||0;
-  const month = MONTHS[mi];
-  const wd    = (mi===2) ? WORK_DAYS_DONE : (WORK_DAYS_MAP[month]||20);
-  const avail = wd * DAILY_TARGET;
-  return avail > 0 ? Math.round(appt / avail * 100) : 0;
-}
-
-// Most recent month index with actual cost data — used by C2 revenue line and pills
-function getRevMi() {
-  return [2,1,0].find(mi => TECHS.some(t => ((TD[t].cost||[])[mi]||0) > 0)) ?? 1;
-}
-
-function buildCharts() {
-  // All charts use alphabetical order (TECHS array is already alphabetical)
-  const alphaOrder = [...TECHS];
-
-  // Shared category config
-  const CAT_KEYS   = ['billable','slaHrs','ssTime','noCharge'];
-  const CAT_LABELS = {billable:'Billable (LAB02/09/12)',slaHrs:'SLA / Maintenance',ssTime:'SS Time',noCharge:'No Charge'};
-  const CAT_SHADES = {
-    billable: ['rgba(0,172,193,0.3)','rgba(0,172,193,0.55)','rgba(0,172,193,0.9)'],
-    slaHrs:   ['rgba(0,200,83,0.3)', 'rgba(0,200,83,0.55)', 'rgba(0,200,83,0.9)'],
-    ssTime:   ['rgba(245,166,35,0.3)','rgba(245,166,35,0.55)','rgba(245,166,35,0.9)'],
-    noCharge: ['rgba(229,57,53,0.3)', 'rgba(229,57,53,0.55)', 'rgba(229,57,53,0.85)'],
+  return {
+    total, utilPts, jobsPts, billPts, consistPts, recognPts, recognBonus,
+    praisePts, awardPts, awardCount, pc,
+    utilRaw, utilPct, utilOver, isOverUtil,
+    jobsRaw, jobsPct, jobsOver, isOverJobs,
+    billPct,
+    breakdown:`U:${utilPts} J:${jobsPts} B:${billPts} C:${consistPts} R:${recognPts}${recognBonus>0?'+'+recognBonus+'b':''}`
   };
+}
 
-  // Flag: does current month have LAB data?
-  const hasLabData = TECHS.some(t => totalLogged(t, 2) > 0);
+const fR  = v => 'R\u202F'+Math.round(v).toLocaleString('en-ZA');
+const fH  = v => (Math.round(v*10)/10)+'h';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const hexRgb = h => `${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)}`;
 
-  // Reusable segment-label plugin factory
-  function segLabelPlugin(id) {
+/* ─── STORAGE KEYS ─────────────────────────────────── */
+const LOG_KEY      = 'ss_perf_v1';    // { 'YYYY-MM-DD': { Ashley:45, ... } }
+const OVERRIDE_KEY = 'ss_override_v1'; // { weekKey:'YYYY-MM-DD', tech:'Naeem', note:'' }
+const YEAR         = new Date().getFullYear();
+
+function getMondayKey(d = new Date()) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  dt.setDate(dt.getDate() - (day === 0 ? 6 : day - 1));
+  return dt.toISOString().slice(0, 10);
+}
+const THIS_WEEK = getMondayKey();
+
+// ── AWARD HELPERS ───────────────────────────────────
+function getAwards() {
+  try { return JSON.parse(localStorage.getItem(AWARD_KEY)||'[]'); } catch(_){ return []; }
+}
+function saveAward(award) {
+  const arr = getAwards();
+  arr.push(award);
+  localStorage.setItem(AWARD_KEY, JSON.stringify(arr));
+}
+// Awards for current week only (reset Monday)
+function thisWeekAwards() {
+  const monday = THIS_WEEK;
+  return getAwards().filter(a=>a.weekKey===monday);
+}
+
+/* ─── STATE ────────────────────────────────────────── */
+let chartInstances  = {};
+let tvChartInstance = null;
+let tvActive        = false;
+let tvPanel         = 0;
+let tvTimer         = null;
+let cachedDisplay   = null;
+let overrideTech    = null; // tech being set in override modal
+let starRating      = 5;
+let apBoardOpen     = false;
+
+/* ─── CLOCK ────────────────────────────────────────── */
+function updateClocks() {
+  const t = new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('clock').textContent    = t;
+  document.getElementById('tv-clock').textContent = t;
+}
+updateClocks();
+setInterval(updateClocks, 10000);
+
+/* ─── DATA LOAD ────────────────────────────────────── */
+async function loadData() {
+  let weekly = null, monthly = null;
+  try { const r=await fetch(WEEKLY_API_URL); if(r.ok) weekly=await r.json(); } catch(_){}
+  try { const r=await fetch(API_URL);        if(r.ok) monthly=await r.json(); } catch(_){}
+
+  const d = buildDisplay(weekly, monthly);
+  cachedDisplay = d;
+
+  // Always hide loading first — a render error must never leave the spinner stuck
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display     = 'block';
+
+  const eb = document.getElementById('err-bar');
+  try {
+    saveWeekScores(d);
+    render(d);
+    if (!weekly && !monthly) {
+      eb.style.display = 'block';
+      eb.textContent   = '⚠ API unreachable — showing demo data';
+    } else {
+      eb.style.display = 'none';
+    }
+  } catch(renderErr) {
+    console.error('Render error:', renderErr);
+    eb.style.display = 'block';
+    eb.textContent   = '⚠ Render error: ' + renderErr.message + ' — check console';
+  }
+
+  const src    = weekly ? 'Weekly' : monthly ? 'Monthly' : 'Demo';
+  const srcFull = weekly ? 'Weekly live data' : monthly ? 'Monthly API' : 'Demo data';
+  const sb = document.getElementById('source-badge');
+  if (sb) {
+    sb.textContent = src;
+    sb.style.background = weekly ? 'rgba(129,199,132,0.15)' : 'rgba(255,183,77,0.12)';
+    sb.style.borderColor= weekly ? 'rgba(129,199,132,0.35)' : 'rgba(255,183,77,0.25)';
+    sb.style.color      = weekly ? 'var(--green)' : 'var(--amber)';
+  }
+  document.getElementById('updated-at').textContent = srcFull + ' · ' + new Date().toLocaleTimeString('en-ZA');
+  if (tvActive) refreshTVData(d);
+}
+
+/* ─── BUILD DISPLAY DATA ───────────────────────────── */
+function buildDisplay(weekly, monthly) {
+  if (weekly && weekly.weeks && weekly.weeks.length) {
+    const wks = weekly.weeks.slice(-3);
+    while (wks.length < 3) wks.unshift({label:'—',techs:{}});
+    // Weekly endpoint returns 3 completed weeks only
+    // Relabel the most recent completed week as "Last Wk" for clarity
+    const wkLabels = wks.map((w,i) => i === wks.length-1 ? 'Last Wk' : w.label);
     return {
-      id,
-      afterDatasetsDraw(chart) {
-        const {ctx} = chart;
-        chart.data.datasets.forEach((ds, di) => {
-          const meta = chart.getDatasetMeta(di);
-          meta.data.forEach((bar, i) => {
-            const val = ds.data[i];
-            if (!val || val < 1) return;
-            const cx  = bar.x;
-            const top = bar.y;
-            const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
-            const mid = top + (bot - top) / 2;
-            if (Math.abs(bot - top) < 12) return;
-            ctx.save();
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 9px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(val.toFixed ? val.toFixed(1) : val, cx, mid);
-            ctx.restore();
-          });
-        });
-      }
+      source:'weekly', month: weekly.month || wks.at(-1).label,
+      weekLabels: wkLabels,
+      weekData:   wks.map(w=>w.techs||{}),
+      champTechs: wks.at(-1).techs||{},
+      praise: weekly.praise||[], workDaysDone:5, dailyTarget:6.5,
     };
   }
+  const base = monthly || fallback();
+  // Monthly fallback: show 3 rolling months with short month labels
+  // prev2 = 2 months ago, prev = last month, current = this month MTD
+  const shortMo = s => (s||'').split(' ')[0] || s; // "May 2026" → "May"
+  return {
+    source:'monthly', month: base.month||'—',
+    weekLabels: [
+      shortMo(base.prev2Month) || 'M-2',
+      shortMo(base.prevMonth)  || 'M-1',
+      shortMo(base.month)      || 'MTD'
+    ],
+    weekData:   [base.prev2Techs||{}, base.prevTechs||{}, base.techs||{}],
+    champTechs: base.techs||{},
+    praise: base.praise||[], workDaysDone: base.workDaysDone||15, dailyTarget: base.dailyTarget||6.5,
+  };
+}
 
-  // Update C1 subtitle to reflect data mode
-  const c1SubEl = document.getElementById('c1-sub');
-  if (c1SubEl && !hasLabData) {
-    c1SubEl.textContent = `${MONTHS[2]}: no LAB entries yet — current month shows EWorks appt ÷ available hrs. Prior months show billable % of logged hrs.`;
-  }
+function getWeekLabel(wksAgo) {
+  const d = new Date();
+  const day = d.getDay();
+  d.setDate(d.getDate() - (day===0?6:day-1) - wksAgo*7);
+  return wksAgo===0 ? 'This Wk' : wksAgo===1 ? 'Last Wk' :
+    d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
+}
 
-  // Team average billable% this month — used as benchmark line on C1
-  const teamAvgBillPct = Math.round(
-    alphaOrder.reduce((s,t) => s + billablePctLogged(t,2), 0) / alphaOrder.length
-  );
+/* ─── RENDER ───────────────────────────────────────── */
+function render(d) {
+  document.getElementById('period-badge').textContent =
+    d.source==='weekly' ? 'Live Weekly' : (d.month||'').split(' ')[0]+' MTD';
+  renderPraise(d.praise);
+  renderAwards();
+  renderChampion(d);
+  renderCharts(d);
+  renderAppraisalBoard();
+  renderBreakdownRoles();
+}
 
-  // ── C1: Billable Efficiency ──
-  if(charts.c1) charts.c1.destroy();
-  charts.c1 = new Chart(document.getElementById('c1'),{
-    type:'bar',
-    data:{
-      labels: alphaOrder,
-      datasets: [
-        ...MONTHS.map((m, mi) => ({
-          type: 'bar',
-          label: m,
-          data: alphaOrder.map(t => billablePctLogged(t, mi)),
-          backgroundColor: mi===2
-            ? alphaOrder.map(t => {
-                const p = billablePctLogged(t, 2);
-                return p>=80?'rgba(0,200,83,0.85)':p>=60?'rgba(245,166,35,0.85)':'rgba(229,57,53,0.80)';
-              })
-            : MC[mi],
-          borderRadius: mi===2?4:2,
-          borderSkipped: false,
-          order: 1,
-        })),
-        // Team average benchmark line
-        {
-          type: 'line',
-          label: 'Team avg ' + MONTHS[2],
-          data: Array(alphaOrder.length).fill(teamAvgBillPct),
-          borderColor: 'rgba(255,255,255,0.45)',
-          borderWidth: 1.5,
-          borderDash: [4,3],
-          pointRadius: 0,
-          pointHoverRadius: 0,
-          tension: 0,
-          fill: false,
-          order: 0,
-        }
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top: 20 } },
-      plugins:{
-        legend:{
-          display:true, position:'top',
-          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
-            filter: item => item.text !== 'Team avg '+MONTHS[2] // hide from legend, drawn by plugin
-          }
-        },
-        tooltip:{...TIP, callbacks:{
-          label: ctx => {
-            if (ctx.dataset.type === 'line') return ` Team avg: ${ctx.raw}%`;
-            const t   = alphaOrder[ctx.dataIndex];
-            const mi  = ctx.datasetIndex;
-            const b   = (TD[t].billable||[])[mi]||0;
-            const tot = totalLogged(t, mi);
-            if (tot > 0) return ` ${ctx.raw}% billable  (${b.toFixed(1)}h of ${tot.toFixed(1)}h logged)`;
-            const appt = (TD[t].appt||[])[mi]||0;
-            return ` ${ctx.raw}% utilisation  (${appt.toFixed(1)}h appt — no LAB entries yet)`;
-          }
-        }}
-      },
-      scales:{
-        x:{ ticks:TX, grid:GRID },
-        y:{ ticks:{...TY,callback:v=>v+'%'}, grid:GRID, max:120,
-            title:{display:true,text:'Billable % of logged hrs',color:'#607D8B',font:{size:9}} }
-      }
-    },
-    plugins:[
-      { id:'tl', afterDraw(c){
-          dline(c,80,'rgba(0,200,83,0.6)','80% TARGET');
-          dline(c,teamAvgBillPct,'rgba(255,255,255,0.35)','TEAM AVG '+teamAvgBillPct+'%');
-        }
-      },
-      {
-        id:'c1ValLabels',
-        afterDatasetsDraw(chart) {
-          const {ctx} = chart;
-          chart.data.datasets.forEach((ds, di) => {
-            if (ds.type === 'line') return; // skip avg line dataset
-            const meta = chart.getDatasetMeta(di);
-            meta.data.forEach((bar, i) => {
-              const val = ds.data[i];
-              if (!val) return;
-              const cx  = bar.x;
-              const top = bar.y;
-              const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
-              const h   = Math.abs(bot - top);
-              ctx.save();
-              ctx.font      = di===2 ? 'bold 9px sans-serif' : '8px sans-serif';
-              ctx.fillStyle = h > 18 ? '#fff' : (di===2 ? '#37474F' : '#90A4AE');
-              ctx.textAlign    = 'center';
-              ctx.textBaseline = h > 18 ? 'middle' : 'bottom';
-              const y = h > 18 ? top + h/2 : top - 3;
-              ctx.fillText(val + '%', cx, y);
-              ctx.restore();
-            });
-          });
-        }
-      }
-    ]
+function toggleBreakdown() {
+  const body = document.getElementById('bp-body');
+  const btn  = document.getElementById('bp-toggle-btn');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  btn.textContent    = open ? '▾ Hide' : '▸ Show';
+}
+
+function renderBreakdownRoles() {
+  const grid = document.getElementById('bp-roles');
+  if (!grid) return;
+  grid.innerHTML = ACTIVE_TECHS.map(t => {
+    const r = tRole(t);
+    const icon = r.type==='field'?'🚗':r.type==='remote'?'🖥':'🔀';
+    const col  = tColor(t);
+    return `<div class="bp-role-card">
+      <div class="bp-role-name" style="color:${col}">${t}</div>
+      <div class="bp-role-type">${icon} ${r.label}</div>
+      <div class="bp-role-tgt">Target: <strong>${r.jobTarget} jobs/day</strong></div>
+      <div class="bp-role-pts">Max job pts: ${Math.round(100 * W_JOBS)} per week</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── PRAISE ───────────────────────────────────────── */
+function renderPraise(praise) {
+  const row   = document.getElementById('recognition-row');
+  const last5 = (praise||[]).slice(0,5);
+  let html = last5.map((p,i) => {
+    const dk = encodeURIComponent(JSON.stringify({
+      tech:p.tech, date:String(p.date||''), text:String(p.text||'').slice(0,60)
+    }));
+    return `
+    <div class="pc ${i===0?'newest':''}" style="position:relative">
+      <button onclick="removePraise('${dk}')" title="Remove entry"
+        style="position:absolute;top:6px;right:7px;background:none;border:none;
+        color:rgba(255,255,255,0.2);font-size:14px;cursor:pointer;line-height:1;
+        padding:2px 4px;border-radius:3px;transition:color .15s"
+        onmouseover="this.style.color='rgba(239,83,80,0.8)'"
+        onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
+      ${i===0?'<div class="new-chip">NEW</div>':''}
+      <div class="p-stars">${'★'.repeat(Math.max(1,Math.min(5,p.stars||5)))}</div>
+      <div class="p-tech">${esc(p.tech)}</div>
+      <div class="p-quote">"${esc(p.text)}"</div>
+      <div class="p-foot">
+        <span class="p-cust">${esc(p.customer||'Anonymous')}</span>
+        <span class="p-date">${esc(p.date||'')}</span>
+      </div>
+    </div>`;
+  }).join('');
+  // Store praise html — combined render happens in renderRecognition
+  renderRecognition._praiseHtml = html;
+  renderRecognition();
+}
+
+/* ─── CHAMPION ─────────────────────────────────────── */
+function getTop(techs, praise, workdays, awards, weekHistory) {
+  const wd = workdays || 5;
+  let best='', best_pts=-1;
+  ACTIVE_TECHS.forEach(t => {
+    if (!techs[t]) return;
+    const s = calcScore(t, techs[t], praise, wd, awards, weekHistory||[]);
+    if (s.total > best_pts){ best_pts=s.total; best=t; }
   });
+  return best;
+}
 
-  // ── C2: Total Job Oversight ───────────────────────────────────────────────────
-  const revMi = getRevMi();
-  const revMonthLabel = MONTHS[revMi] + (revMi < 2 ? ' (latest available)' : ' MTD');
-
-  const teamTotalCost = alphaOrder.reduce((s,t) => s+((TD[t].cost||[])[revMi]||0), 0);
-  const teamTotalJobs = alphaOrder.reduce((s,t) => s+((TD[t].jobs||[])[2]||0), 0);
-
-  const C2_BAR_COLORS = [
-    'rgba(0,172,193,0.28)',
-    'rgba(0,172,193,0.55)',
-    'rgba(0,172,193,0.90)',
-  ];
-
-  // Revenue % per tech for the best available month
-  const revPctLine = alphaOrder.map(t =>
-    teamTotalCost > 0
-      ? parseFloat((((TD[t].cost||[])[revMi]||0) / teamTotalCost * 100).toFixed(1))
-      : 0
-  );
-
-  const c2Datasets = [
-    // 3 bar datasets — one per month
-    ...MONTHS.map((m, mi) => ({
-      type: 'bar',
-      label: mi===2 ? MONTHS[2]+' (MTD)' : m,
-      data: alphaOrder.map(t => (TD[t].jobs||[])[mi]||0),
-      backgroundColor: C2_BAR_COLORS[mi],
-      borderRadius: mi===2 ? 4 : 2,
-      borderSkipped: false,
-      yAxisID: 'yJobs',
-      order: 1,
-    })),
-    // Line dataset — revenue % this month
-    {
-      type: 'line',
-      label: 'Revenue % of team — ' + revMonthLabel,
-      data: revPctLine,
-      yAxisID: 'yPct',
-      borderColor: '#F5A623',
-      backgroundColor: 'rgba(245,166,35,0.08)',
-      pointBackgroundColor: revPctLine.map(v => v>=12?'#00C853':v>=8?'#F5A623':'#E53935'),
-      pointBorderColor: '#fff',
-      pointBorderWidth: 1.5,
-      pointRadius: 6,
-      pointHoverRadius: 8,
-      borderWidth: 2.5,
-      tension: 0,
-      fill: false,
-      order: 0,
+function renderChampion(d) {
+  const praise = d.praise||[];
+  // Check manual override for this week
+  let champTech = null, isOverride = false, overrideNote = '';
+  try {
+    const ov = JSON.parse(localStorage.getItem(OVERRIDE_KEY)||'null');
+    if (ov && ov.weekKey===THIS_WEEK && ov.tech) {
+      champTech  = ov.tech;
+      isOverride = true;
+      overrideNote = ov.note||'';
     }
-  ];
+  } catch(_){}
+  if (!champTech) champTech = getTop(d.champTechs, praise, d.workDaysDone||5, thisWeekAwards(), d.weekData||[]);
+  if (!champTech) return;
 
-  if(charts.c2) charts.c2.destroy();
-  charts.c2 = new Chart(document.getElementById('c2'),{
-    type: 'bar',
-    data: { labels: alphaOrder, datasets: c2Datasets },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top: 22 } },
-      plugins:{
-        legend:{
-          display:true, position:'top',
-          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6 }
-        },
-        tooltip:{...TIP, callbacks:{
-          title: ctx => alphaOrder[ctx[0].dataIndex],
-          label: ctx => {
-            const v  = ctx.raw;
-            const di = ctx.datasetIndex;
-            if (di === 3) {
-              const t    = alphaOrder[ctx.dataIndex];
-              const cost = (TD[t].cost||[])[2]||0;
-              return ` Revenue share: ${v}%  (${fmtR(cost)})`;
-            }
-            return ` ${ctx.dataset.label}: ${v} jobs`;
-          },
-          afterBody: ctx => {
-            const t    = alphaOrder[ctx[0].dataIndex];
-            const cost = (TD[t].cost||[])[2]||0;
-            const jobs = (TD[t].jobs||[])[2]||0;
-            const pct  = teamTotalCost>0 ? (cost/teamTotalCost*100).toFixed(1) : '—';
-            const jpct = teamTotalJobs>0 ? (jobs/teamTotalJobs*100).toFixed(1) : '—';
-            return ['',
-              `MTD Revenue: ${fmtR(cost)}  (${pct}% of team)`,
-              `MTD Jobs: ${jobs}  (${jpct}% of team)`,
-            ];
-          }
-        }}
+  const v   = d.champTechs[champTech]||{};
+  const col = tColor(champTech);
+  const bp  = v.billPct||0;
+  const uc  = bp>=80?'var(--green)':bp>=60?'var(--amber)':'var(--red)';
+  const sc  = calcScore(champTech, v, praise, d.workDaysDone||5, thisWeekAwards(), d.weekData||[]);
+  const pc  = sc.pc;
+  const pts = sc.total;
+  const label = d.source==='weekly' ? (d.weekLabels.at(-1)||d.month) : d.month;
+
+  document.getElementById('sp-av').textContent      = champTech.slice(0,2).toUpperCase();
+  document.getElementById('sp-av').style.background = col;
+  document.getElementById('sp-av').style.color      = '#fff';
+  document.getElementById('sp-name').textContent    = champTech.toUpperCase();
+  document.getElementById('sp-period').textContent  = label;
+  const spUtilEl = document.getElementById('sp-util');
+  spUtilEl.textContent = bp+'%'+(bp>100?' 🔥':'');
+  spUtilEl.style.color = uc;
+  spUtilEl.title = bp>100?'Over target — scoring capped at 100%, excess tracked':'';
+  document.getElementById('sp-jobs').textContent    = v.jobs||0;
+  document.getElementById('sp-praise-c').textContent = pc;
+  document.getElementById('sp-pts').textContent     = pts;
+
+  // Manager override badge
+  const bw = document.getElementById('mgr-badge-wrap');
+  if (isOverride) {
+    bw.innerHTML = `<div class="mgr-badge" onclick="clearOverride()" title="Click to clear override">
+      ⚡ Manager's Pick${overrideNote?' — '+esc(overrideNote.slice(0,30)):''} · click to clear
+    </div>`;
+    document.getElementById('override-status').textContent = 'Manager override active this week';
+  } else {
+    bw.innerHTML = '';
+    document.getElementById('override-status').textContent = '';
+  }
+}
+
+/* ─── CHARTS ───────────────────────────────────────── */
+function renderCharts(d) {
+  const praise  = d.praise||[];
+  const wLabels = d.weekLabels;
+  const wData   = d.weekData;
+  const DAILY   = d.dailyTarget||6.5;
+  const weekTgt = 5*DAILY;
+  const awards = thisWeekAwards();
+  const topTech = getTop(d.champTechs, praise, d.workDaysDone||5, awards, d.weekData||[]);
+  const ytdLog  = getLog();
+  const ytdRanks = rankYTD(ytdLog);
+
+  const grid = document.getElementById('chart-grid');
+  grid.innerHTML = '';
+  Object.values(chartInstances).forEach(c=>c.destroy());
+  chartInstances = {};
+
+  ACTIVE_TECHS.forEach(t => {
+    const col    = tColor(t);
+    const colRgb = hexRgb(col);
+    const pc     = praise.filter(x=>x.tech===t).length;
+    const isTop  = t===topTech;
+    const appt   = wData.map(w=>(w[t]||{}).appt||0);
+    const valid  = appt.filter(v=>v>0);
+    const avg    = valid.length ? Math.round(valid.reduce((s,v)=>s+v,0)/valid.length*10)/10 : 0;
+    const latest = (wData.at(-1)||{})[t]||{};
+    const bp     = latest.billPct||0;
+    const uc     = bp>=80?'var(--green)':bp>=60?'var(--amber)':'var(--red)';
+    const rev    = Math.round((latest.cost||0)/1000);
+    const ytd    = getYTD(ytdLog, t);
+    const rank   = ytdRanks[t]||'—';
+
+    const role   = tRole(t);
+    const sc     = calcScore(t, latest, praise, d.workDaysDone||5, awards, d.weekData||[]);
+    const jPct   = Math.round(sc.jobsPct);
+    const jUc    = jPct>=100?'var(--green)':jPct>=70?'var(--amber)':'var(--red)';
+    const roleIcon = role.type==='field'?'🚗':role.type==='remote'?'🖥':'🔀';
+    const roleTgt  = `${role.jobTarget} jobs/day`;
+
+    const card = document.createElement('div');
+    card.className = `chart-card${isTop?' is-top':''}`;
+    card.innerHTML = `
+      <button class="cc-crown-btn" onclick="openOverride('${t}')" title="Crown ${t} as Weekly Champion">👑</button>
+      <div class="cc-head">
+        <div class="cc-av" style="background:${col};color:#fff">${t.slice(0,2).toUpperCase()}</div>
+        <div class="cc-info">
+          <div class="cc-name">${esc(t)}${isTop?' <span style="font-size:10px">👑</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-top:2px">
+            <span style="font-size:8px;color:var(--muted)">${roleIcon} ${esc(role.label)}</span>
+            <span style="font-size:8px;color:rgba(0,200,230,0.35)">· ${roleTgt}</span>
+          </div>
+        </div>
+      </div>
+      <!-- Util bar — bar caps at 100%, label shows real %, orange if over -->
+      <div class="cc-util-row">
+        <div style="font-size:8px;color:var(--muted);min-width:28px">Util</div>
+        <div class="cc-track" style="flex:1"><div class="cc-bar" style="width:${Math.min(bp,100)}%;background:${bp>100?'rgba(255,152,0,0.8)':uc}"></div></div>
+        <div class="cc-pct" style="color:${bp>100?'rgba(255,152,0,0.95)':uc}">${Math.round(bp)}%</div>
+      </div>
+      <!-- Jobs bar — bar caps at 100%, label shows real %, orange if over -->
+      <div class="cc-util-row">
+        <div style="font-size:8px;color:var(--muted);min-width:28px">Jobs</div>
+        <div class="cc-track" style="flex:1"><div class="cc-bar" style="width:${Math.min(jPct,100)}%;background:${jPct>100?'rgba(255,152,0,0.8)':jUc}"></div></div>
+        <div class="cc-pct" style="color:${jPct>100?'rgba(255,152,0,0.95)':jUc}">${Math.round(jPct)}%</div>
+      </div>
+      <div class="cc-chart"><canvas id="chart-${t}"></canvas></div>
+      <div class="cc-stats">
+        <div class="cc-stat"><div class="cc-stat-v" style="color:var(--teal)">${sc.total}</div><div class="cc-stat-l">Pts</div></div>
+        <div class="cc-stat"><div class="cc-stat-v" style="color:var(--text)">${latest.jobs||0}</div><div class="cc-stat-l">Jobs</div></div>
+        <div class="cc-stat"><div class="cc-stat-v" style="color:var(--text);font-size:10px">R${rev}k</div><div class="cc-stat-l">Rev</div></div>
+      </div>
+      ${pc>0?`<div class="cc-praise">⭐ ${pc} · ${sc.praisePts}pts</div>`:''}
+      ${sc.awardCount>0?`<div class="cc-praise" style="background:rgba(255,183,77,0.07);border-color:rgba(255,183,77,0.2);color:rgba(255,183,77,0.8)">🏅 ${sc.awardCount} award${sc.awardCount!==1?'s':''} · +${sc.awardPts}pts</div>`:''}
+      ${(sc.isOverUtil||sc.isOverJobs)?`<div class="cc-over-chip">🔥 ${sc.isOverUtil?'Util +'+Math.round(sc.utilOver)+'%':''}${(sc.isOverUtil&&sc.isOverJobs)?' · ':''}${sc.isOverJobs?'Jobs +'+Math.round(sc.jobsOver)+'%':''}<span class="cc-over-note"> above target · tracked</span></div>`:''}
+      <div class="cc-ytd"><span class="cc-ytd-pts">YTD ${ytd} pts</span><span class="cc-ytd-rank">#${rank}</span></div>
+    `;
+    grid.appendChild(card);
+
+    chartInstances[t] = new Chart(card.querySelector(`#chart-${t}`), {
+      type:'bar',
+      data:{
+        labels:wLabels,
+        datasets:[
+          {type:'bar',label:'Billable Hrs',data:appt,
+            backgroundColor:`rgba(${colRgb},0.62)`,borderColor:col,borderWidth:1.5,borderRadius:4,order:2},
+          {type:'line',label:`Avg ${avg}h`,data:[avg,avg,avg],
+            borderColor:'#FFB74D',borderWidth:2,borderDash:[5,3],
+            pointStyle:'circle',pointRadius:4,pointBackgroundColor:'#FFB74D',fill:false,tension:0,order:1},
+          {type:'line',label:`Target ${weekTgt}h`,data:[weekTgt,weekTgt,weekTgt],
+            borderColor:'#81C784',borderWidth:2,borderDash:[2,4],
+            pointStyle:'triangle',pointRadius:5,pointBackgroundColor:'#81C784',fill:false,tension:0,order:0}
+        ]
       },
-      scales:{
-        x:{ ticks:TX, grid:GRID },
-        yJobs:{
-          type:'linear', position:'left',
-          ticks:{ ...TY, stepSize:1 }, grid:GRID,
-          title:{display:true, text:'Jobs completed', color:'#607D8B', font:{size:9}},
-        },
-        yPct:{
-          type:'linear', position:'right',
-          min:0, max: Math.max(20, Math.ceil(Math.max(...revPctLine)/5)*5 + 5),
-          ticks:{ ...TY, callback: v => v+'%' },
-          grid:{ drawOnChartArea:false },
-          title:{display:true, text:'Revenue % of team', color:'#F5A623', font:{size:9}},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        animation:{duration:900,easing:'easeOutQuart'},
+        plugins:{legend:{display:false},tooltip:{
+          backgroundColor:'#133452',borderColor:'rgba(0,200,230,0.28)',borderWidth:1,
+          titleColor:'#00C8E6',bodyColor:'#B2EBF2',
+          titleFont:{family:"'Barlow Condensed'",weight:'700',size:11},
+          bodyFont:{family:"'Barlow'",size:11},
+          callbacks:{label:ctx=>` ${ctx.dataset.label}: ${Math.round(ctx.parsed.y*10)/10}h`}
+        }},
+        scales:{
+          x:{grid:{color:'rgba(0,200,230,0.06)'},ticks:{color:'#7BBDD0',font:{family:"'Barlow Condensed'",weight:'700',size:10}},
+            barPercentage:0.92,categoryPercentage:0.88},
+          y:{beginAtZero:true,grid:{color:'rgba(0,200,230,0.06)'},
+            ticks:{color:'#7BBDD0',font:{family:"'Barlow Condensed'",size:9},maxTicksLimit:5,callback:v=>v+'h'}}
         }
       }
-    },
-    plugins:[{
-      id:'c2Labels',
-      afterDatasetsDraw(chart) {
-        const {ctx} = chart;
-        // Job count labels on current-month bars (dataset index 2)
-        const currMeta = chart.getDatasetMeta(2);
-        currMeta.data.forEach((bar, i) => {
-          const val = c2Datasets[2].data[i];
-          if (!val) return;
-          const cx  = bar.x;
-          const top = bar.y;
-          const bot = bar.base !== undefined ? bar.base : bar.y + bar.height;
-          const h   = Math.abs(bot - top);
-          ctx.save();
-          ctx.fillStyle = h > 16 ? '#fff' : '#00ACC1';
-          ctx.font = 'bold 9px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = h > 16 ? 'middle' : 'bottom';
-          ctx.fillText(val, cx, h > 16 ? top + h/2 : top - 3);
-          ctx.restore();
-        });
-        // Revenue % labels above each line point
-        const lineMeta = chart.getDatasetMeta(3);
-        lineMeta.data.forEach((point, i) => {
-          const val = revPctLine[i];
-          if (!val) return;
-          ctx.save();
-          ctx.fillStyle = val>=12?'#00C853':val>=8?'#F5A623':'#E53935';
-          ctx.font = 'bold 9px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'bottom';
-          ctx.fillText(val+'%', point.x, point.y - 6);
-          ctx.restore();
-        });
-      }
-    }]
-  });
-
-  // ── C3: Labour Categories — all 3 months side by side, full colours ──────────
-  const c3SubEl = document.getElementById('c3-sub');
-  if (c3SubEl) {
-    c3SubEl.innerHTML =
-      MONTHS.map((m,mi) => `<strong style="color:${['#78909C','#90CAF9','#00ACC1'][mi]}">${m}</strong>`).join(' → ') +
-      ' — <span style="color:#00ACC1;font-weight:600">Billable</span> · ' +
-      '<span style="color:#00C853;font-weight:600">SLA/Maint</span> · ' +
-      '<span style="color:#F5A623;font-weight:600">SS Time</span> · ' +
-      '<span style="color:#E53935;font-weight:600">No Charge</span>';
-  }
-
-  // Full-opacity colours for every month — no fading
-  const CAT_SOLID = {
-    billable: 'rgba(0,172,193,0.90)',
-    slaHrs:   'rgba(0,200,83,0.90)',
-    ssTime:   'rgba(245,166,35,0.90)',
-    noCharge: 'rgba(229,57,53,0.85)',
-  };
-  // Slightly lighter for older months so current stands out without washing out
-  const CAT_MID = {
-    billable: 'rgba(0,172,193,0.55)',
-    slaHrs:   'rgba(0,200,83,0.55)',
-    ssTime:   'rgba(245,166,35,0.55)',
-    noCharge: 'rgba(229,57,53,0.50)',
-  };
-  const CAT_FAINT = {
-    billable: 'rgba(0,172,193,0.28)',
-    slaHrs:   'rgba(0,200,83,0.28)',
-    ssTime:   'rgba(245,166,35,0.28)',
-    noCharge: 'rgba(229,57,53,0.25)',
-  };
-  const C3_BG = [CAT_FAINT, CAT_MID, CAT_SOLID];
-
-  // Build 12 datasets: 3 months × 4 categories
-  const c3Datasets = [];
-  [0, 1, 2].forEach(mi => {
-    const isCurr = mi === 2;
-    CAT_KEYS.forEach((cat, ci) => {
-      c3Datasets.push({
-        label: isCurr ? CAT_LABELS[cat] : '\u200b'.repeat(mi * CAT_KEYS.length + ci + 1),
-        data:  alphaOrder.map(t => (TD[t][cat]||[])[mi]||0),
-        backgroundColor: C3_BG[mi][cat],
-        borderRadius: (isCurr && ci === CAT_KEYS.length-1) ? 4 : 0,
-        borderSkipped: false,
-        stack: 'mo' + mi,
-      });
     });
   });
+}
 
-  // Non-billable % per tech for current month — overlaid as line on C3
-  const nbPctCurr = alphaOrder.map(t => {
-    const tot = totalLogged(t, 2);
-    const nb  = ((TD[t].noCharge||[])[2]||0) + ((TD[t].ssTime||[])[2]||0);
-    return tot > 0 ? parseFloat((nb / tot * 100).toFixed(1)) : 0;
+/* ─── APPRAISAL LOG ────────────────────────────────── */
+function getLog() {
+  try { return JSON.parse(localStorage.getItem(LOG_KEY)||'{}'); } catch(_){ return {}; }
+}
+function saveLog(log) {
+  localStorage.setItem(LOG_KEY, JSON.stringify(log));
+}
+function saveWeekScores(d) {
+  const log = getLog();
+  if (log[THIS_WEEK]) return; // already saved this week
+  const week = {};
+  const praise = d.praise||[];
+  const wd     = d.workDaysDone||5;
+  const awards = thisWeekAwards();
+  ACTIVE_TECHS.forEach(t => {
+    const v  = (d.champTechs||{})[t]||{};
+    const sc = calcScore(t, v, praise, wd, awards, []);
+    week[t]  = sc.total;
+    // Store breakdown for appraisal display
+    week[t+'_detail'] = { util:sc.utilPts, jobs:sc.jobsPts,
+      praise:sc.praisePts, awards:sc.awardPts };
   });
-  const nbPctPrev = alphaOrder.map(t => {
-    const tot = totalLogged(t, 1);
-    const nb  = ((TD[t].noCharge||[])[1]||0) + ((TD[t].ssTime||[])[1]||0);
-    return tot > 0 ? parseFloat((nb / tot * 100).toFixed(1)) : 0;
+  log[THIS_WEEK] = week;
+  // Prune to current year only
+  Object.keys(log).forEach(k=>{ if (!k.startsWith(YEAR)) delete log[k]; });
+  saveLog(log);
+}
+function getYTD(log, tech) {
+  return Object.values(log).reduce((s,wk)=>s+(wk[tech]||0),0);
+}
+function rankYTD(log) {
+  const totals = {};
+  ACTIVE_TECHS.forEach(t=>totals[t]=getYTD(log,t));
+  const sorted = [...ACTIVE_TECHS].sort((a,b)=>totals[b]-totals[a]);
+  const ranks = {};
+  sorted.forEach((t,i)=>ranks[t]=i+1);
+  return ranks;
+}
+
+function renderAppraisalBoard() {
+  const log   = getLog();
+  const ranks = rankYTD(log);
+  const weeks = Object.keys(log).sort();
+  const grid  = document.getElementById('ap-grid');
+  const maxPts = Math.max(1,...ACTIVE_TECHS.map(t=>getYTD(log,t)));
+
+  grid.innerHTML = [...ACTIVE_TECHS].sort((a,b)=>getYTD(log,b)-getYTD(log,a)).map(t=>{
+    const ytd  = getYTD(log,t);
+    const col  = tColor(t);
+    const pct  = Math.round(ytd/maxPts*100);
+    const role = tRole(t);
+    const roleIcon = role.type==='field'?'🚗':role.type==='remote'?'🖥':'🔀';
+    // Week breakdown for tooltip
+    const recent = weeks.slice(-3).map(w=>`${w.slice(5)}: ${log[w]?.[t]||0}pts`).join(' · ');
+    // Current week score breakdown
+    const latestWk   = weeks.at(-1);
+    const latestEntry = (latestWk && log[latestWk]) ? log[latestWk][t+'_detail'] || null : null;
+    const allAwards  = thisWeekAwards().filter(a=>a.tech===t);
+    const awardPtsWk = allAwards.reduce((s,a)=>s+(a.pts||0),0);
+    return `
+      <div class="ap-card">
+        <div class="ap-rank-badge" style="color:${col}">#${ranks[t]} ${YEAR} · ${roleIcon} ${role.label}</div>
+        <div class="ap-tech-name">${esc(t)}</div>
+        <div class="ap-pts-big" style="color:${col}">${ytd}</div>
+        <div class="ap-pts-lbl">YTD Points</div>
+        <div class="ap-bar-wrap"><div class="ap-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+        ${awardPtsWk>0?`<div style="font-size:9px;color:var(--amber);margin-top:3px">🏅 +${awardPtsWk} staff award pts this week</div>`:''}
+        ${recent?`<div class="ap-wk-row">${esc(recent)}</div>`:''}
+      </div>`;
+  }).join('');
+}
+
+function toggleAppraisal() {
+  apBoardOpen = !apBoardOpen;
+  document.getElementById('ap-content').style.display = apBoardOpen ? 'block' : 'none';
+  document.getElementById('ap-arrow').textContent     = apBoardOpen ? '▾' : '▸';
+  document.getElementById('ap-toggle-lbl').textContent = apBoardOpen ? 'Hide Board' : 'Show Board';
+}
+
+/* ─── CHAMPION OVERRIDE ────────────────────────────── */
+function openOverride(tech) {
+  overrideTech = tech;
+  const col = tColor(tech);
+  document.getElementById('ov-av').style.background = col;
+  document.getElementById('ov-av').style.color      = '#fff';
+  document.getElementById('ov-av').textContent      = tech.slice(0,2).toUpperCase();
+  document.getElementById('ov-name').textContent    = tech.toUpperCase();
+  document.getElementById('ov-note').value          = '';
+  document.getElementById('ov-modal').classList.add('open');
+}
+function closeOverride() {
+  document.getElementById('ov-modal').classList.remove('open');
+  overrideTech = null;
+}
+function confirmOverride() {
+  if (!overrideTech) return;
+  const note = (document.getElementById('ov-note').value||'').trim();
+  localStorage.setItem(OVERRIDE_KEY, JSON.stringify({weekKey:THIS_WEEK,tech:overrideTech,note}));
+  closeOverride();
+  if (cachedDisplay) renderChampion(cachedDisplay);
+}
+function clearOverride() {
+  if (!confirm('Clear manager override and restore auto-calculated champion?')) return;
+  localStorage.removeItem(OVERRIDE_KEY);
+  if (cachedDisplay) renderChampion(cachedDisplay);
+}
+
+/* ─── TV MODE ──────────────────────────────────────── */
+const TV_PANELS = ['champ', ...ACTIVE_TECHS, 'praise'];
+const TV_TIMES  = [10000, ...ACTIVE_TECHS.map(()=>6000), 10000];
+
+function enterTV() {
+  if (!cachedDisplay) return;
+  tvActive = true;
+  tvPanel  = 0;
+  document.getElementById('tv').classList.add('on');
+  document.getElementById('app').style.display = 'none';
+  document.documentElement.requestFullscreen?.();
+  buildTVDots();
+  showPanel(0);
+}
+function exitTV() {
+  tvActive = false;
+  clearTimeout(tvTimer);
+  if (tvChartInstance) { tvChartInstance.destroy(); tvChartInstance=null; }
+  document.getElementById('tv').classList.remove('on');
+  document.getElementById('app').style.display = 'block';
+  document.exitFullscreen?.();
+}
+function buildTVDots() {
+  document.getElementById('tv-dots').innerHTML = TV_PANELS.map((_,i)=>
+    `<div class="tv-dot${i===0?' act':''}" id="tvdot-${i}"></div>`).join('');
+}
+function setDot(i) {
+  document.querySelectorAll('.tv-dot').forEach((d,j)=>d.classList.toggle('act',j===i));
+}
+function showPanel(idx) {
+  tvPanel = idx % TV_PANELS.length;
+  const key = TV_PANELS[tvPanel];
+  setDot(tvPanel);
+
+  // Hide all panels
+  ['tv-champ','tv-tech','tv-praise'].forEach(id=>{
+    document.getElementById(id).classList.remove('show');
   });
 
-  // Add non-billable % lines to c3Datasets
-  c3Datasets.push({
-    type: 'line',
-    label: 'Non-billable % — ' + (MONTHS[1]||'prev'),
-    data: nbPctPrev,
-    yAxisID: 'yNB',
-    borderColor: 'rgba(229,57,53,0.45)',
-    borderWidth: 1.5,
-    borderDash: [4,3],
-    pointRadius: 3,
-    pointBackgroundColor: 'rgba(229,57,53,0.45)',
-    pointBorderColor: 'transparent',
-    tension: 0,
-    fill: false,
-    order: 0,
-    stack: undefined,
-  });
-  c3Datasets.push({
-    type: 'line',
-    label: 'Non-billable % — ' + MONTHS[2],
-    data: nbPctCurr,
-    yAxisID: 'yNB',
-    borderColor: 'rgba(229,57,53,0.9)',
-    borderWidth: 2,
-    borderDash: [],
-    pointRadius: 4,
-    pointBackgroundColor: nbPctCurr.map(v => v>=20?'#E53935':v>=10?'#FFB300':'#00C853'),
-    pointBorderColor: '#fff',
-    pointBorderWidth: 1,
-    tension: 0,
-    fill: false,
-    order: 0,
-    stack: undefined,
-  });
+  if (key==='champ')  { renderTVChamp();        document.getElementById('tv-champ').classList.add('show'); }
+  else if (key==='praise') { renderTVPraise();   document.getElementById('tv-praise').classList.add('show'); }
+  else                { renderTVTech(key);        document.getElementById('tv-tech').classList.add('show'); }
 
-  if(charts.c3) charts.c3.destroy();
-  charts.c3 = new Chart(document.getElementById('c3'),{
+  // Progress bar
+  const dur = TV_TIMES[tvPanel];
+  const bar = document.getElementById('tv-bar');
+  bar.style.transition='none'; bar.style.width='0';
+  requestAnimationFrame(()=>{
+    bar.style.transition=`width ${dur}ms linear`;
+    bar.style.width='100%';
+  });
+  tvTimer = setTimeout(()=>showPanel(tvPanel+1), dur);
+}
+function refreshTVData(d) { /* data already cached, panel re-renders on next cycle */ }
+
+function renderTVChamp() {
+  const d = cachedDisplay;
+  const praise = d.praise||[];
+  let champTech = null;
+  try {
+    const ov=JSON.parse(localStorage.getItem(OVERRIDE_KEY)||'null');
+    if(ov&&ov.weekKey===THIS_WEEK) champTech=ov.tech;
+  } catch(_){}
+  if (!champTech) champTech = getTop(d.champTechs, praise, d.workDaysDone||5, thisWeekAwards(), d.weekData||[]);
+  if (!champTech) return;
+  const v=d.champTechs[champTech]||{},col=tColor(champTech),bp=v.billPct||0;
+  const pc=praise.filter(p=>p.tech===champTech).length;
+  const pts=Math.round(bp*.5+(v.jobs||0)*.3+pc*10);
+  const uc=bp>=80?'var(--green)':bp>=60?'var(--amber)':'var(--red)';
+  document.getElementById('tv-c-av').textContent      = champTech.slice(0,2).toUpperCase();
+  document.getElementById('tv-c-av').style.background = col;
+  document.getElementById('tv-c-av').style.color      = '#fff';
+  document.getElementById('tv-c-period').textContent  = d.weekLabels.at(-1)||d.month;
+  document.getElementById('tv-c-name').textContent    = champTech.toUpperCase();
+  document.getElementById('tv-c-stats').innerHTML = `
+    <div class="tv-c-stat"><div class="tv-c-val" style="color:${uc}">${bp}%</div><div class="tv-c-lbl">Utilisation</div></div>
+    <div class="tv-c-stat"><div class="tv-c-val" style="color:var(--teal)">${v.jobs||0}</div><div class="tv-c-lbl">Jobs</div></div>
+    <div class="tv-c-stat"><div class="tv-c-val" style="color:var(--amber)">${pc}</div><div class="tv-c-lbl">Recognitions</div></div>
+    <div class="tv-c-stat"><div class="tv-c-val" style="color:var(--teal);font-size:32px">${pts}</div><div class="tv-c-lbl">Performance Pts</div></div>
+  `;
+}
+
+function renderTVTech(t) {
+  const d    = cachedDisplay;
+  const col  = tColor(t);
+  const data = d.weekData.map(w=>(w[t]||{}).appt||0);
+  const v    = (d.weekData.at(-1)||{})[t]||{};
+  const bp   = v.billPct||0;
+  const uc   = bp>=80?'var(--green)':bp>=60?'var(--amber)':'var(--red)';
+  const valid = data.filter(x=>x>0);
+  const avg  = valid.length ? Math.round(valid.reduce((s,v)=>s+v,0)/valid.length*10)/10 : 0;
+  const tgt  = 5*(d.dailyTarget||6.5);
+
+  document.getElementById('tv-t-av').textContent      = t.slice(0,2).toUpperCase();
+  document.getElementById('tv-t-av').style.background = col;
+  document.getElementById('tv-t-av').style.color      = '#fff';
+  document.getElementById('tv-t-name').textContent    = t.toUpperCase();
+  document.getElementById('tv-t-name').style.color    = '#fff';
+  document.getElementById('tv-t-stats').innerHTML = `
+    <div class="tv-t-stat"><div class="tv-t-val" style="color:${uc}">${bp}%</div><div class="tv-t-lbl">Utilisation</div></div>
+    <div class="tv-t-stat"><div class="tv-t-val" style="color:var(--teal)">${v.jobs||0}</div><div class="tv-t-lbl">Jobs</div></div>
+    <div class="tv-t-stat"><div class="tv-t-val" style="color:var(--text);font-size:26px">${fH(v.appt||0)}</div><div class="tv-t-lbl">Billable Hrs</div></div>
+    <div class="tv-t-stat"><div class="tv-t-val" style="color:var(--text);font-size:22px">${fR(v.cost||0)}</div><div class="tv-t-lbl">Revenue</div></div>
+  `;
+  // chart
+  if (tvChartInstance) { tvChartInstance.destroy(); tvChartInstance=null; }
+  const canvas = document.getElementById('tv-chart-canvas');
+  const colRgb = hexRgb(col);
+  tvChartInstance = new Chart(canvas,{
     type:'bar',
-    data:{ labels: alphaOrder, datasets: c3Datasets },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ top: 16 } },
-      plugins:{
-        legend:{
-          display:true, position:'top',
-          labels:{ color:'#607D8B', font:{size:9}, boxWidth:10, padding:6,
-                   filter: item => !item.text.startsWith('\u200b') }
-        },
-        tooltip:{...TIP, callbacks:{
-          title: ctx => {
-            const t  = alphaOrder[ctx[0].dataIndex];
-            const di = ctx[0].datasetIndex;
-            if (di >= 12) {
-              const mi = di === 12 ? 1 : 2;
-              return t + ' — Non-billable % ' + MONTHS[mi];
-            }
-            const mi = Math.floor(di / CAT_KEYS.length);
-            return t + ' — ' + MONTHS[mi];
-          },
-          label: ctx => {
-            const v = ctx.raw; if(!v && v!==0) return null;
-            const di = ctx.datasetIndex;
-            if (di >= 12) return ` Non-billable: ${v}% of logged hrs`;
-            const ci = di % CAT_KEYS.length;
-            return ` ${CAT_LABELS[CAT_KEYS[ci]]}: ${v.toFixed(1)}h`;
-          },
-          afterBody: ctx => {
-            const t  = alphaOrder[ctx[0].dataIndex];
-            const di = ctx[0].datasetIndex;
-            const mi = di >= 12 ? (di===12?1:2) : Math.floor(di / CAT_KEYS.length);
-            const tot  = totalLogged(t, mi);
-            const bill = (TD[t].billable||[])[mi]||0;
-            const nb   = ((TD[t].noCharge||[])[mi]||0) + ((TD[t].ssTime||[])[mi]||0);
-            const billPct = tot>0 ? (bill/tot*100).toFixed(0)+'%' : '—';
-            const nbPct   = tot>0 ? (nb/tot*100).toFixed(0)+'%'   : '—';
-            return ['', `Billable: ${billPct}`, `Non-billable: ${nbPct}`, `Total logged: ${tot.toFixed(1)}h`];
-          }
-        }}
-      },
+    data:{labels:d.weekLabels,datasets:[
+      {type:'bar',data,backgroundColor:`rgba(${colRgb},0.65)`,borderColor:col,borderWidth:2,borderRadius:5,order:2},
+      {type:'line',data:[avg,avg,avg],borderColor:'#FFB74D',borderWidth:2.5,borderDash:[6,3],
+        pointStyle:'circle',pointRadius:6,pointBackgroundColor:'#FFB74D',fill:false,tension:0,order:1},
+      {type:'line',data:[tgt,tgt,tgt],borderColor:'#81C784',borderWidth:2.5,borderDash:[2,4],
+        pointStyle:'triangle',pointRadius:7,pointBackgroundColor:'#81C784',fill:false,tension:0,order:0}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
       scales:{
-        x:{ ticks:TX, grid:GRID, stacked:true },
-        y:{ ticks:{...TY,callback:v=>v+'h'}, grid:GRID, stacked:true,
-            title:{display:true,text:'Hours logged',color:'#607D8B',font:{size:9}} },
-        yNB:{
-          type:'linear', position:'right',
-          min:0, max:50,
-          ticks:{ ...TY, callback: v => v+'%' },
-          grid:{ drawOnChartArea:false },
-          title:{display:true, text:'Non-billable %', color:'rgba(229,57,53,0.8)', font:{size:9}},
-        }
+        x:{grid:{color:'rgba(0,200,230,0.06)'},ticks:{color:'#7BBDD0',font:{family:"'Barlow Condensed'",weight:'700',size:14}},
+          barPercentage:0.92,categoryPercentage:0.88},
+        y:{beginAtZero:true,grid:{color:'rgba(0,200,230,0.06)'},
+          ticks:{color:'#7BBDD0',font:{family:"'Barlow Condensed'",size:13},maxTicksLimit:5,callback:v=>v+'h'}}
       }
-    },
-    plugins:[
-      {
-        id:'c3SegLabels',
-        afterDatasetsDraw(chart) {
-          const {ctx} = chart;
-          chart.data.datasets.forEach((ds, di) => {
-            if (ds.type === 'line') return;
-            const meta = chart.getDatasetMeta(di);
-            meta.data.forEach((bar, i) => {
-              const val = ds.data[i];
-              if (!val || val < 1) return;
-              const top = bar.y, bot = bar.base !== undefined ? bar.base : bar.y+bar.height;
-              const h = Math.abs(bot-top);
-              if (h < 13) return;
-              ctx.save();
-              ctx.fillStyle = '#fff';
-              ctx.font = 'bold 9px sans-serif';
-              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-              ctx.fillText(val.toFixed(1), bar.x, top+h/2);
-              ctx.restore();
-            });
-          });
-        }
-      },
-      {
-        id:'c3NbLabels',
-        afterDatasetsDraw(chart) {
-          // Label non-billable % above each point on the current-month line only (dataset index 13)
-          const {ctx} = chart;
-          const ds   = chart.data.datasets[13];
-          if (!ds) return;
-          const meta = chart.getDatasetMeta(13);
-          meta.data.forEach((point, i) => {
-            const val = nbPctCurr[i];
-            if (!val) return;
-            ctx.save();
-            ctx.fillStyle = val>=20?'#E53935':val>=10?'#FFB300':'#00C853';
-            ctx.font = 'bold 8px sans-serif';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-            ctx.fillText(val+'%', point.x, point.y - 5);
-            ctx.restore();
-          });
-        }
-      }
-    ]
-  });
-
-    // ── C4: Team Revenue 3-Month Trend — Stacked (Adhoc + SLA Recurring) ──
-  const adhocByMonth  = MONTHS.map((m,mi) =>
-    ADHOC3[mi] > 0 ? ADHOC3[mi] : TECHS.reduce((s,t)=>s+((TD[t].cost||[])[mi]||0),0)
-  );
-  const slaByMonth    = MONTHS.map(m => SLA_REVENUE[m] || 0);
-  const totalByMonth  = MONTHS.map((m,mi) => adhocByMonth[mi] + slaByMonth[mi]);
-  const mTargets      = MONTHS.map(m => MONTH_TARGETS[m] || REV_TARGET);
-  const mtdExpected   = REV_TARGET * (WORK_DAYS_DONE / (WORK_DAYS_MONTH||1));
-  const barLabels     = MONTHS.map((m,mi) => mi===2 ? m+' (MTD)' : m);
-
-  // Projected month-end: extrapolate current MTD revenue over remaining working days
-  const projectedRevenue = WORK_DAYS_DONE > 0
-    ? Math.round(totalByMonth[2] / WORK_DAYS_DONE * WORK_DAYS_MONTH)
-    : 0;
-
-  if(charts.c4) charts.c4.destroy();
-  charts.c4 = new Chart(document.getElementById('c4'),{
-    type:'bar',
-    data:{
-      labels: barLabels,
-      datasets:[
-        {
-          label:'Adhoc / Callout',
-          data: adhocByMonth,
-          backgroundColor: 'rgba(0,172,193,0.8)',
-          borderRadius: 0,
-          borderSkipped: false,
-          stack: 'rev',
-        },
-        {
-          label:'SLA Recurring',
-          data: slaByMonth,
-          backgroundColor: 'rgba(0,200,83,0.75)',
-          borderRadius: 4,
-          borderSkipped: false,
-          stack: 'rev',
-        }
-      ]
-    },
-    options:{
-      indexAxis:'y',
-      responsive:true, maintainAspectRatio:false,
-      plugins:{
-        legend:{
-          display:true, position:'top',
-          labels:{color:'#607D8B',font:{size:9},boxWidth:10,padding:8}
-        },
-        tooltip:{
-          ...TIP,
-          callbacks:{
-            title: ctx => barLabels[ctx[0].dataIndex],
-            afterBody: ctx => {
-              const mi    = ctx[0].dataIndex;
-              const total = totalByMonth[mi];
-              const tgt   = mTargets[mi];
-              const pct   = tgt>0 ? Math.round(total/tgt*100) : 0;
-              if(mi===2){
-                const pace = mtdExpected>0 ? Math.round(total/mtdExpected*100) : 0;
-                const projPct = mTargets[2]>0 ? Math.round(projectedRevenue/mTargets[2]*100) : 0;
-                return ['','Total MTD: '+fmtR(total),'Target: '+fmtR(mTargets[2]),'MTD Pace: '+pace+'%','→ Projected EOM: '+fmtR(projectedRevenue)+' ('+projPct+'% of target)','Adhoc: '+fmtR(adhocByMonth[mi]),'SLA: '+fmtR(slaByMonth[mi])];
-              }
-              return ['','Total: '+fmtR(total),'Target: '+fmtR(tgt),'Attainment: '+pct+'%','Adhoc: '+fmtR(adhocByMonth[mi]),'SLA: '+fmtR(slaByMonth[mi])];
-            }
-          }
-        }
-      },
-      scales:{
-        x:{
-          stacked:true,
-          ticks:{...TY,callback:v=>'R'+Math.round(v/1000)+'k'},
-          grid:GRID,
-          title:{display:true,text:'Team Revenue (R)',color:'#607D8B',font:{size:9}}
-        },
-        y:{stacked:true,ticks:{color:'#607D8B',font:{size:11,weight:'600'}},grid:GRID}
-      }
-    },
-    plugins:[{
-      id:'revTargetLines',
-      afterDraw(chart){
-        const {ctx,chartArea,scales:{x}} = chart;
-        // Draw target line for each month
-        MONTHS.forEach((m,mi)=>{
-          const tgt = mTargets[mi];
-          const xPx = x.getPixelForValue(tgt);
-          if(xPx<chartArea.left||xPx>chartArea.right) return;
-          ctx.save();
-          ctx.strokeStyle='rgba(245,166,35,0.85)';ctx.lineWidth=2;ctx.setLineDash([4,3]);
-          ctx.beginPath();ctx.moveTo(xPx,chartArea.top);ctx.lineTo(xPx,chartArea.bottom);ctx.stroke();
-          ctx.setLineDash([]);
-          if(mi===0){
-            ctx.fillStyle='rgba(245,166,35,0.85)';ctx.font='600 9px sans-serif';
-            ctx.fillText('Target',xPx+3,chartArea.top+10);
-          }
-          ctx.restore();
-        });
-        // MTD pace line on current month only
-        const xMTD = x.getPixelForValue(mtdExpected);
-        if(xMTD>=chartArea.left&&xMTD<=chartArea.right){
-          ctx.save();
-          ctx.strokeStyle='rgba(0,172,193,0.8)';ctx.lineWidth=1.5;ctx.setLineDash([3,3]);
-          ctx.beginPath();ctx.moveTo(xMTD,chartArea.top);ctx.lineTo(xMTD,chartArea.bottom);ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.fillStyle='rgba(0,172,193,0.8)';ctx.font='600 9px sans-serif';
-          ctx.fillText('Pace '+fmtR(mtdExpected),xMTD+3,chartArea.top+22);
-          ctx.restore();
-        }
-        // Projected month-end revenue line
-        const xProj = x.getPixelForValue(projectedRevenue);
-        if(projectedRevenue>0&&xProj>=chartArea.left&&xProj<=chartArea.right){
-          ctx.save();
-          ctx.strokeStyle='rgba(245,166,35,0.6)';ctx.lineWidth=2;ctx.setLineDash([6,3]);
-          ctx.beginPath();ctx.moveTo(xProj,chartArea.top);ctx.lineTo(xProj,chartArea.bottom);ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.fillStyle='rgba(245,166,35,0.9)';ctx.font='bold 9px sans-serif';
-          ctx.fillText('Projected '+fmtR(projectedRevenue),xProj+3,chartArea.top+34);
-          ctx.restore();
-        }
-      }
-    }]
+    }
   });
 }
 
-// ── HEADER ────────────────────────────────────────────────────────────────────
-function updateHeader() {
-  const adhocTotal = TECHS.reduce((s,t)=>s+((TD[t].cost||[])[2]||0),0);
-  const total      = adhocTotal + SLA_CURR;
-  const fullPct  = Math.min(total/(REV_TARGET||1)*100,100);
+function renderTVPraise() {
+  const praise = (cachedDisplay.praise||[]).slice(0,5);
+  document.getElementById('tv-praise-grid').innerHTML = praise.map(p=>`
+    <div class="tv-pc">
+      <div class="tv-pc-stars">${'★'.repeat(Math.max(1,Math.min(5,p.stars||5)))}</div>
+      <div class="tv-pc-tech">${esc(p.tech)}</div>
+      <div class="tv-pc-quote">"${esc(p.text)}"</div>
+      <div class="tv-pc-cust">${esc(p.customer||'Anonymous')} · ${esc(p.date||'')}</div>
+    </div>`).join('');
+}
 
-  // Pace % = actual revenue vs where we SHOULD be at this point in the month
-  const expectedNow = (REV_TARGET||1) * (WORK_DAYS_DONE / (WORK_DAYS_MONTH||1));
-  const pacePct     = expectedNow > 0 ? Math.round(total / expectedNow * 100) : 0;
+// Keyboard control for TV mode
+document.addEventListener('keydown', e => {
+  if (!tvActive) return;
+  if (e.key==='Escape')      exitTV();
+  if (e.key==='ArrowRight')  { clearTimeout(tvTimer); showPanel(tvPanel+1); }
+  if (e.key==='ArrowLeft')   { clearTimeout(tvTimer); showPanel(tvPanel-1<0?TV_PANELS.length-1:tvPanel-1); }
+  if (e.key===' ')           { clearTimeout(tvTimer); } // pause
+});
 
-  // Dynamic heading based on pace
-  let heading, headingColor;
-  if (pacePct >= 110) {
-    heading = '🚀 Smashing It! — Team is ahead of pace, keep pushing!';
-    headingColor = '#00C853';
-  } else if (pacePct >= 90) {
-    heading = '🎯 On Target — Looking good, finish strong!';
-    headingColor = '#00ACC1';
-  } else if (pacePct >= 70) {
-    heading = '⚡ Time to Push — Gap to close, every rand counts!';
-    headingColor = '#FFB300';
-  } else {
-    heading = "🔥 Hunt Mode — Let's go team, target needs catching!";
-    headingColor = '#E53935';
+/* ─── STAFF AWARDS ──────────────────────────────────── */
+function renderAwards() {
+  const awards = thisWeekAwards();
+  renderRecognition._awardsHtml = awards.length === 0 ? '' :
+    awards.slice().reverse().map(a=>{
+    const cat   = AWARD_CATS.find(c=>c.id===a.catId)||{label:a.catId,pts:a.pts||0};
+    const isMgr = MANAGERS.includes(a.giver);
+    const chipBg= isMgr ? 'rgba(255,183,77,0.18)' : 'rgba(129,199,132,0.18)';
+    const chipCol= isMgr ? 'var(--amber)' : 'var(--green)';
+    return `<div class="award-card ${isMgr?'management':'staff'}" style="position:relative">
+      <button onclick="removeAward(${a.ts})" title="Remove this award"
+        style="position:absolute;top:6px;right:7px;background:none;border:none;
+        color:rgba(255,255,255,0.2);font-size:14px;cursor:pointer;line-height:1;
+        padding:2px 4px;border-radius:3px;transition:color .2s"
+        onmouseover="this.style.color='rgba(239,83,80,0.8)'"
+        onmouseout="this.style.color='rgba(255,255,255,0.2)'">✕</button>
+      <div><span class="aw-cat-chip" style="background:${chipBg};color:${chipCol}">${cat.label}</span></div>
+      <div class="aw-tech-name">${esc(a.tech)}</div>
+      <div class="aw-note-text">"${esc(a.note)}"</div>
+      <div class="aw-footer">
+        <span>from ${esc(a.giver)}</span>
+        <span class="aw-pts-badge">+${cat.pts} pts</span>
+      </div>
+    </div>`;
+  }).join('');
+  renderRecognition();
+}
+
+// Combined recognition row renderer
+function renderRecognition() {
+  const row = document.getElementById('recognition-row');
+  if (!row) return;
+  const praise = renderRecognition._praiseHtml || '';
+  const awards = renderRecognition._awardsHtml || '';
+  // Divider between sections if both have content
+  const div = (praise && awards)
+    ? `<div style="width:1px;min-width:1px;height:auto;align-self:stretch;
+        background:rgba(0,200,230,0.15);margin:0 4px;flex-shrink:0"></div>`
+    : '';
+  row.innerHTML = praise + div + awards
+    + `<button class="add-btn" onclick="openModal()"><span>✦</span>Add Feedback</button>`;
+}
+renderRecognition._praiseHtml = '';
+renderRecognition._awardsHtml = '';
+
+let selectedCatId = null;
+function openAwardModal() {
+  selectedCatId = null;
+  const giverSel = document.getElementById('aw-giver');
+  const techSel  = document.getElementById('aw-tech');
+  const allPeople = [...MANAGERS, ...PRAISE_PEOPLE.filter(p=>!MANAGERS.includes(p))];
+  giverSel.innerHTML = '<option value="">— Who are you? —</option>' +
+    allPeople.map(p=>`<option value="${p}">${p}${MANAGERS.includes(p)?' 👑':''}</option>`).join('');
+  techSel.innerHTML  = '<option value="">— Select technician —</option>' +
+    ACTIVE_TECHS.map(t=>`<option value="${t}">${t}</option>`).join('');
+  giverSel.onchange  = buildCatOptions;
+  techSel.onchange   = buildCatOptions;
+  buildCatOptions();
+  document.getElementById('aw-note').value = '';
+  document.getElementById('award-modal').style.display = 'flex';
+}
+function closeAwardModal() {
+  document.getElementById('award-modal').style.display = 'none';
+}
+function buildCatOptions() {
+  const giver  = document.getElementById('aw-giver').value;
+  const isMgr  = MANAGERS.includes(giver);
+  const cats   = AWARD_CATS.filter(c=>!c.managerOnly || isMgr);
+  const catsDiv= document.getElementById('aw-cats');
+  catsDiv.innerHTML = cats.map(c=>`
+    <div class="aw-cat-option${selectedCatId===c.id?' selected':''}" onclick="selectCat('${c.id}',this)">
+      <input type="radio" name="aw_cat" value="${c.id}" ${selectedCatId===c.id?'checked':''}>
+      <div class="aw-cat-label">
+        <div class="aw-cat-name">${c.label}</div>
+        <div class="aw-cat-desc">${c.desc}</div>
+      </div>
+      <div class="aw-cat-pts">+${c.pts}</div>
+    </div>`).join('');
+}
+function selectCat(id, el) {
+  selectedCatId = id;
+  document.querySelectorAll('.aw-cat-option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+async function submitAward() {
+  const giver = document.getElementById('aw-giver').value;
+  const tech  = document.getElementById('aw-tech').value;
+  const note  = (document.getElementById('aw-note').value||'').trim();
+  if (!giver)         { alert('Please select your name.');return; }
+  if (!tech)          { alert('Please select the technician.');return; }
+  if (giver===tech)   { alert('You cannot award yourself.');return; }
+  if (!selectedCatId) { alert('Please select an award category.');return; }
+  if (!note)          { alert('Please add a note — what did they do specifically?');return; }
+  const cat = AWARD_CATS.find(c=>c.id===selectedCatId);
+  const award = {
+    weekKey:THIS_WEEK, giver, tech, catId:selectedCatId, pts:cat.pts, note,
+    date: new Date().toLocaleDateString('en-ZA',{day:'numeric',month:'short'}),
+    ts:   Date.now()
+  };
+  // Try API first, fallback to localStorage
+  try {
+    const ADD_AWARD_URL = API_URL.replace('dashboard-data','add-staff-award');
+    const r = await fetch(ADD_AWARD_URL,{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(award)});
+    if (!r.ok) throw new Error('API '+r.status);
+  } catch(_) {
+    // localStorage fallback
+    saveAward(award);
   }
-
-  // Bold performance icon based on pace
-  let icon;
-  if (pacePct >= 110) {
-    icon = '🟢▲';
-  } else if (pacePct >= 90) {
-    icon = '🟡→';
-  } else {
-    icon = '🔴▼';
+  closeAwardModal();
+  renderAwards();
+  if (cachedDisplay) {
+    renderChampion(cachedDisplay);
+    renderCharts(cachedDisplay);
+    renderAppraisalBoard();
   }
-  const projRevTotal = WORK_DAYS_DONE > 0
-    ? Math.round(total / WORK_DAYS_DONE * WORK_DAYS_MONTH)
-    : 0;
-  const projPctOfTarget = REV_TARGET > 0 ? Math.round(projRevTotal / REV_TARGET * 100) : 0;
-  const projColor = projPctOfTarget >= 100 ? '#00C853' : projPctOfTarget >= 85 ? '#FFB300' : '#E53935';
+}
 
-  document.getElementById('perf-icon').textContent = icon;
-  document.getElementById('rev-heading').textContent = heading;
-  document.getElementById('rev-heading').style.color = headingColor;
-  document.getElementById('rev-fill').style.width    = fullPct.toFixed(1)+'%';
-  document.getElementById('rev-label').textContent   = fmtR(total)+' / '+fmtR(REV_TARGET)+' ('+Math.round(fullPct)+'% of target · pace '+pacePct+'%)';
-  document.getElementById('mtd-badge').textContent   = 'MTD Day '+WORK_DAYS_DONE+' of '+WORK_DAYS_MONTH+' · Target '+(WORK_DAYS_DONE*DAILY_TARGET)+'h/tech';
-  document.getElementById('month-badge').textContent = MONTHS[2];
-
-  // Projected EOM revenue badge — create or update
-  let projEl = document.getElementById('proj-badge');
-  if (!projEl) {
-    projEl = document.createElement('span');
-    projEl.id = 'proj-badge';
-    projEl.style.cssText = 'margin-left:8px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,0.25);';
-    document.getElementById('mtd-badge').insertAdjacentElement('afterend', projEl);
+function removeAward(ts) {
+  if (!confirm('Remove this award? This cannot be undone.')) return;
+  const arr = getAwards().filter(a => a.ts !== ts);
+  localStorage.setItem(AWARD_KEY, JSON.stringify(arr));
+  renderAwards();
+  if (cachedDisplay) {
+    renderChampion(cachedDisplay);
+    renderCharts(cachedDisplay);
+    renderAppraisalBoard();
   }
-  projEl.textContent   = '→ Projected EOM: ' + fmtR(projRevTotal) + ' (' + projPctOfTarget + '% of target)';
-  projEl.style.color   = projColor;
 }
 
-// ── BOTTOM PILLS ──────────────────────────────────────────────────────────────
-function buildPills() {
-  const bar = document.getElementById('bottom');
-  bar.innerHTML='';
-  const jobTop = TECHS.slice().sort((a,b)=>((TD[b].jobs||[])[2]||0)-((TD[a].jobs||[])[2]||0))[0];
-  const revTop = TECHS.slice().sort((a,b)=>((TD[b].cost||[])[2]||0)-((TD[a].cost||[])[2]||0))[0];
-  const utTop  = TECHS.slice().sort((a,b)=>billPct(b,2)-billPct(a,2))[0];
-
-  const revMi = getRevMi();
-
-  // Rev/hr top performer
-  const revHrTop = TECHS.slice().sort((a,b) => {
-    const tha = totalLogged(a,revMi)||1; const thb = totalLogged(b,revMi)||1;
-    return ((TD[b].cost||[])[revMi]||0)/thb - ((TD[a].cost||[])[revMi]||0)/tha;
-  })[0];
-
-  TECHS.forEach(tech => {
-    const c    = COLOR(tech);
-    const util = billPct(tech,2);
-    const prev = billPct(tech,1);
-    const diff = util - prev;
-    const avg  = avgHrs(tech,2);
-    const jobs = (TD[tech].jobs||[])[2]||0;
-    const rev  = (TD[tech].cost||[])[revMi]||0;
-
-    // Revenue per logged hour — use whichever month has cost data
-    const hrs       = totalLogged(tech, revMi);
-    const revPerHr  = hrs > 0 ? Math.round(rev / hrs) : 0;
-    const revHrColor = revPerHr >= 500 ? 'var(--green)' : revPerHr >= 300 ? 'var(--gold)' : 'var(--red)';
-
-    // Non-billable % (noCharge + ssTime) of total logged — current month or fallback
-    const nbMi   = [2,1,0].find(mi => totalLogged(tech,mi) > 0) ?? 2;
-    const nbTot  = totalLogged(tech, nbMi);
-    const nb     = ((TD[tech].noCharge||[])[nbMi]||0) + ((TD[tech].ssTime||[])[nbMi]||0);
-    const nbPct  = nbTot > 0 ? Math.round(nb / nbTot * 100) : 0;
-    const nbColor = nbPct >= 20 ? 'var(--red)' : nbPct >= 10 ? 'var(--gold)' : 'var(--green)';
-
-    const barC = util>=100?'var(--green)':util>=80?'var(--gold)':util>=60?'var(--amber)':'var(--red)';
-    const mCls = diff>2?'up':diff<-2?'dn':'fl';
-    const mTxt = diff>2?`▲${diff}%`:diff<-2?`▼${Math.abs(diff)}%`:'→';
-    const cr   = [utTop===tech?'⏱':'', jobTop===tech?'🏆':'', revTop===tech?'💰':'', revHrTop===tech?'⚡':''].filter(Boolean).join('');
-
-    bar.insertAdjacentHTML('beforeend',`
-      <div class="tp" role="listitem">
-        ${cr?`<div class="tp-crown">${cr}</div>`:''}
-        <div class="tp-name" style="color:${c}">${INITIALS[tech]} · ${tech}</div>
-        <div class="tp-nums">
-          <div class="tp-n"><strong style="color:${barC}">${util}%</strong> util</div>
-          <div class="tp-n"><strong>${jobs}</strong> jobs</div>
-          <div class="tp-n"><strong>${avg}h</strong>/day</div>
-        </div>
-        <div class="tp-bar"><div class="tp-bar-fill" style="width:${Math.min(util,100)}%;background:${barC}"></div></div>
-        <div class="tp-bot">
-          <div class="tp-rev"><strong>${fmtR(rev)}</strong> MTD</div>
-          <div class="tp-mom ${mCls}">${mTxt} vs ${MONTHS[1]||'prev'}</div>
-        </div>
-        <div class="tp-extra">
-          <div class="tp-n" title="Revenue per logged hour">⚡ <strong style="color:${revHrColor}">R${revPerHr}/h</strong></div>
-          <div class="tp-n" title="Non-billable % of logged hours">🚫 <strong style="color:${nbColor}">${nbPct}% NB</strong></div>
-        </div>
-      </div>`);
-  });
+/* ─── PRAISE MODAL ─────────────────────────────────── */
+/* ─── REMOVE PRAISE ────────────────────────────────── */
+async function removePraise(delKeyEncoded) {
+  if (!confirm('Remove this feedback entry?\nIt will be permanently deleted from the workbook.')) return;
+  const btn = event.target;
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const key = JSON.parse(decodeURIComponent(delKeyEncoded));
+    const DELETE_URL = API_URL.replace('dashboard-data', 'remove-praise');
+    const r = await fetch(DELETE_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(key)
+    });
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({error:'Server error '+r.status}));
+      throw new Error(err.error || 'HTTP '+r.status);
+    }
+    await loadData(); // refresh everything
+  } catch(e) {
+    btn.textContent = '✕'; btn.disabled = false;
+    alert('Could not remove: ' + e.message);
+  }
 }
 
-// ── PRAISE ────────────────────────────────────────────────────────────────────
-function renderPraise() {
-  const feed=document.getElementById('praise-feed');
-  feed.innerHTML='';
-  PRAISE.slice(0,5).forEach((p,i)=>{
-    const c=COLOR(p.tech);
-    const stars='★'.repeat(p.stars)+'☆'.repeat(5-p.stars);
-    const isFeatured = i===0;
-    feed.insertAdjacentHTML('beforeend',`
-      <div class="praise-card ${isFeatured?'ft':''}">
-        ${isFeatured?'<div class="praise-new-banner">Most recent</div>':''}
-        <div class="p-stars">${stars}</div>
-        <div class="p-text">"${p.text}"</div>
-        <div class="p-from">${p.customer} · ${p.date}</div>
-        <span class="p-tag" style="background:${c}22;color:${c}">${p.tech}</span>
-      </div>`);
-  });
-}
-
-// ── MODAL ─────────────────────────────────────────────────────────────────────
-let starVal=5;
-function openModal(){
-  const sel=document.getElementById('m-tech');
-  if(!sel.options.length) PRAISE_PEOPLE.forEach(t=>sel.insertAdjacentHTML('beforeend',`<option>${t}</option>`));
+function openModal() {
+  document.getElementById('m-tech').innerHTML = PRAISE_PEOPLE.map(p=>`<option value="${p}">${p}</option>`).join('');
   document.getElementById('modal').classList.add('open');
 }
-function closeModal(){document.getElementById('modal').classList.remove('open');}
-function setStar(n){starVal=n;document.querySelectorAll('.sbtn').forEach((b,i)=>b.classList.toggle('on',i<n));}
-async function submitPraise(){
-  const tech=document.getElementById('m-tech').value;
-  const cust=document.getElementById('m-cust').value.trim()||'Anonymous';
-  const text=document.getElementById('m-text').value.trim();
-  if(!text)return;
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function setStar(n) {
+  starRating=n;
+  document.querySelectorAll('.sbtn').forEach((b,i)=>b.classList.toggle('on',i<n));
+}
+async function submitPraise() {
+  const tech=(document.getElementById('m-tech').value);
+  const cust=(document.getElementById('m-cust').value||'').trim()||'Anonymous';
+  const text=(document.getElementById('m-text').value||'').trim();
+  if (!text){alert('Please enter some feedback.');return;}
   try{
-    await fetch(ADD_PRAISE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({tech,customer:cust,stars:starVal,text})});
-  }catch(e){console.warn('Praise save failed:',e.message);}
-  PRAISE.unshift({tech,customer:cust,stars:starVal,text,date:'Today'});
-  closeModal();renderPraise();
-  document.getElementById('m-cust').value='';
-  document.getElementById('m-text').value='';
-  setStar(5);
+    const r=await fetch(ADD_PRAISE_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tech,customer:cust,stars:starRating,text})});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    closeModal();
+    document.getElementById('m-text').value='';
+    document.getElementById('m-cust').value='';
+    await loadData();
+  }catch(e){alert('Could not save: '+e.message);}
 }
 
-// ── LIVE DATA ─────────────────────────────────────────────────────────────────
-async function loadData(){
-  try{
-    const controller = new AbortController();
-    const timeout    = setTimeout(()=>controller.abort(), 10000);
-    const res        = await fetch(API_URL, {signal: controller.signal});
-    clearTimeout(timeout);
-    if(!res.ok) throw new Error('API '+res.status);
-    const json = await res.json();
-    if(json.error) throw new Error(json.error);
-
-    // ── Update config ──
-    WORK_DAYS_DONE  = json.workDaysDone  || WORK_DAYS_DONE;
-    WORK_DAYS_MONTH = json.workDaysMonth || WORK_DAYS_MONTH;
-    REV_TARGET      = json.revenueTarget || REV_TARGET;
-    if(json.monthTargets) Object.assign(MONTH_TARGETS, json.monthTargets);
-
-    // ── Rolling 3-month window — always use what API returns ──
-    if(json.threeMonths && json.threeMonths.length >= 2){
-      const tm = json.threeMonths;
-      if(tm.length === 3){ MONTHS[0]=tm[0]; MONTHS[1]=tm[1]; MONTHS[2]=tm[2]; }
-      else if(tm.length === 2){ MONTHS[1]=tm[0]; MONTHS[2]=tm[1]; }
-    } else {
-      if(json.month)      MONTHS[2] = json.month;
-      if(json.prevMonth)  MONTHS[1] = json.prevMonth;
-      if(json.prev2Month) MONTHS[0] = json.prev2Month;
-    }
-
-    // ── SLA for all 3 months ──
-    if(json.sla3 && json.sla3.length){
-      const offset = 3 - json.sla3.length;
-      json.sla3.forEach((v,i)=>{ SLA_REVENUE[MONTHS[offset+i]] = v; });
-      SLA_CURR = json.sla3[json.sla3.length-1] || 0;
-    } else {
-      if(json.slaRevenue !== undefined){ SLA_CURR = json.slaRevenue; SLA_REVENUE[MONTHS[2]] = json.slaRevenue; }
-    }
-
-    // ── Adhoc team totals ──
-    if(json.adhoc3 && json.adhoc3.length === 3){
-      ADHOC3[0] = json.adhoc3[0];
-      ADHOC3[1] = json.adhoc3[1];
-      ADHOC3[2] = json.adhoc3[2];
-    }
-
-    // ── Per-tech data for all 3 months ──
-    const apiMonths = [json.prev2Techs, json.prevTechs, json.techs];
-    TECHS.forEach(t=>{
-      apiMonths.forEach((tm,mi)=>{
-        if(tm && tm[t]){
-          TD[t].appt[mi]     = tm[t].appt     || 0;
-          TD[t].jobs[mi]     = tm[t].jobs     || 0;
-          TD[t].cost[mi]     = tm[t].cost     || 0;
-          TD[t].travel[mi]   = tm[t].travel   || 0;
-          TD[t].billable[mi] = tm[t].billable || 0;
-          TD[t].slaHrs[mi]   = tm[t].slaHrs   || 0;
-          TD[t].ssTime[mi]   = tm[t].ssTime   || 0;
-          TD[t].noCharge[mi] = tm[t].noCharge || 0;
-        }
-      });
-    });
-
-    if(json.praise && json.praise.length) PRAISE = json.praise;
-    console.log('Live data loaded — months:', MONTHS.join(' | '), '| generated:', json.generatedAt);
-
-  } catch(e){
-    console.warn('Live data unavailable, showing last known data:', e.message);
-  }
-  updateHeader();
-  buildCharts();
-  buildPills();
-  renderPraise();
+/* ─── FALLBACK ─────────────────────────────────────── */
+function fallback(){
+  return{
+    month:'May 2026',dailyTarget:6.5,workDaysDone:15,workDaysMonth:21,
+    techs:{
+      Ashley:{appt:18.5,jobs:14,cost:6200,billPct:57},David:{appt:22.0,jobs:12,cost:7100,billPct:68},
+      Jarryd:{appt:14.5,jobs:9,cost:2800,billPct:45},Mondre:{appt:25.0,jobs:28,cost:7400,billPct:77},
+      Naeem:{appt:28.5,jobs:14,cost:9800,billPct:88},Raees:{appt:26.0,jobs:30,cost:5600,billPct:80},
+      Riedhor:{appt:24.0,jobs:22,cost:7200,billPct:74}
+    },
+    prevTechs:{
+      Ashley:{appt:20.0,jobs:16,cost:7100,billPct:62},David:{appt:19.5,jobs:11,cost:6400,billPct:60},
+      Jarryd:{appt:13.0,jobs:8,cost:2200,billPct:40},Mondre:{appt:23.0,jobs:25,cost:6800,billPct:71},
+      Naeem:{appt:30.5,jobs:16,cost:10200,billPct:94},Raees:{appt:24.5,jobs:27,cost:5100,billPct:75},
+      Riedhor:{appt:26.0,jobs:24,cost:8100,billPct:80}
+    },
+    prev2Techs:{
+      Ashley:{appt:17.0,jobs:13,cost:5800,billPct:52},David:{appt:24.5,jobs:14,cost:8200,billPct:75},
+      Jarryd:{appt:11.5,jobs:7,cost:1900,billPct:35},Mondre:{appt:27.0,jobs:31,cost:8100,billPct:83},
+      Naeem:{appt:26.0,jobs:13,cost:9100,billPct:80},Raees:{appt:28.0,jobs:33,cost:6200,billPct:86},
+      Riedhor:{appt:22.5,jobs:20,cost:6800,billPct:69}
+    },
+    praise:[
+      {tech:'Naeem',customer:'Blue Label Telecoms',stars:5,text:'Naeem resolved our server issue in record time.',date:'20 May'},
+      {tech:'Riedhor',customer:'Grapevine Trading',stars:5,text:'Above and beyond to get our systems back online.',date:'19 May'},
+      {tech:'Ashley',customer:'Cape Timber Co.',stars:5,text:'Extremely efficient. Had our network sorted within the hour.',date:'18 May'},
+      {tech:'Raees',customer:'ACSA Logistics',stars:4,text:'On-site quickly and fixed the issue on first visit.',date:'16 May'},
+      {tech:'Mondre',customer:'Konica Minolta SA',stars:5,text:"Mondre's attitude and knowledge is always top-class.",date:'14 May'}
+    ],
+    generatedAt:new Date().toISOString()
+  };
 }
 
-// ── CLOCK ─────────────────────────────────────────────────────────────────────
-function tick(){
-  document.getElementById('clock').textContent=
-    new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-}
-setInterval(tick,1000);tick();
-// Render immediately with fallback data so charts never show blank
-updateHeader();
-buildCharts();
-buildPills();
-renderPraise();
-
-// Then fetch live data and re-render
 loadData();
-setInterval(loadData, 60*60*1000); // refresh every 60 minutes // refreshes every 60 minutes
+setInterval(loadData, 5*60*1000);
 </script>
 </body>
 </html>
